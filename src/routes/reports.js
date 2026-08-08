@@ -3,6 +3,7 @@ const { body, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
+const { sendReportUpdateEmail } = require('../services/email.service');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -158,6 +159,12 @@ router.put(
           assignedTo: { select: { id: true, name: true, email: true } },
         },
       });
+
+      // Send email notification if status changed
+      if (data.status && data.status !== existing.status) {
+        sendReportUpdateEmail(report.reporter, report).catch(e => console.error('[report email]', e.message));
+      }
+
       res.json({ report });
     } catch (err) {
       res.status(500).json({ message: 'Failed to update report' });

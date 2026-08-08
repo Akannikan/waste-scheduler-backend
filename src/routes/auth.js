@@ -6,6 +6,7 @@ const { body } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
+const { sendWelcomeEmail } = require('../services/email.service');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -51,6 +52,8 @@ router.post(
       });
 
       const token = signToken(user);
+      // Send welcome email (non-blocking)
+      sendWelcomeEmail(user).catch(e => console.error('[welcome email]', e.message));
       res.status(201).json({ token, user: safeUser(user) });
     } catch (err) {
       console.error('[register]', err);

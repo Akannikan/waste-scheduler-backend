@@ -1,6 +1,6 @@
 // ─────────────────────────────────────────────────────────────
-//  Waste Scheduler & Recycling Management System
-//  Prisma Schema — PostgreSQL
+//  WasteScheduler — Nigeria Waste Management System
+//  Prisma Schema v2 — PostgreSQL
 // ─────────────────────────────────────────────────────────────
 
 generator client {
@@ -54,24 +54,47 @@ enum AudienceType {
   admins
 }
 
+enum BillingType {
+  per_kg
+  monthly_flat
+  per_bin
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  overdue
+  waived
+}
+
+enum QuizDifficulty {
+  easy
+  medium
+  hard
+}
+
 // ─── MODELS ──────────────────────────────────────────────────
 
 model User {
-  id            Int      @id @default(autoincrement())
-  name          String   @db.VarChar(100)
-  email         String   @unique @db.VarChar(255)
-  passwordHash  String
-  role          Role     @default(resident)
-  phone         String?  @db.VarChar(20)
-  address       String?  @db.VarChar(255)
-  avatarUrl     String?
-  zoneId        Int?
-  isActive      Boolean  @default(true)
-  emailVerified Boolean  @default(false)
-  resetToken    String?
-  resetExpires  DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  name            String    @db.VarChar(100)
+  email           String    @unique @db.VarChar(255)
+  passwordHash    String
+  role            Role      @default(resident)
+  phone           String?   @db.VarChar(20)
+  address         String?   @db.VarChar(255)
+  state           String?   @db.VarChar(60)
+  lga             String?   @db.VarChar(100)
+  avatarUrl       String?
+  zoneId          Int?
+  isActive        Boolean   @default(true)
+  emailVerified   Boolean   @default(false)
+  resetToken      String?
+  resetExpires    DateTime?
+  points          Int       @default(0)
+  badges          String[]
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   zone               Zone?               @relation(fields: [zoneId], references: [id])
   reports            Report[]            @relation("ReportedBy")
@@ -79,6 +102,9 @@ model User {
   notifications      Notification[]
   collectionRecords  CollectionRecord[]
   wasteLogs          WasteLog[]
+  bills              Bill[]
+  payments           Payment[]
+  quizAttempts       QuizAttempt[]
 
   @@index([email])
   @@index([role])
@@ -91,6 +117,8 @@ model Zone {
   name        String   @db.VarChar(100)
   code        String   @unique @db.VarChar(20)
   description String?
+  state       String?  @db.VarChar(60)
+  lga         String?  @db.VarChar(100)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -98,30 +126,101 @@ model Zone {
   users             User[]
   pickupSchedules   PickupSchedule[]
   recyclingCenters  RecyclingCenter[]
+  pricingRules      PricingRule[]
 
   @@index([code])
   @@map("zones")
 }
 
 model WasteCategory {
-  id          Int      @id @default(autoincrement())
-  name        String   @unique @db.VarChar(100)
-  slug        String   @unique @db.VarChar(100)
-  color       String   @db.VarChar(20)
-  binColor    String   @db.VarChar(50)
-  icon        String?
-  description String?
+  id            Int      @id @default(autoincrement())
+  name          String   @unique @db.VarChar(100)
+  slug          String   @unique @db.VarChar(100)
+  color         String   @db.VarChar(20)
+  binColor      String   @db.VarChar(50)
+  icon          String?
+  description   String?
   collectionDay String?  @db.VarChar(60)
-  tips        String[]
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  tips          String[]
+  pricePerKg    Float?   @default(0)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   pickupSchedules  PickupSchedule[]
   wasteLogs        WasteLog[]
+  pricingRules     PricingRule[]
 
   @@index([slug])
   @@map("waste_categories")
+}
+
+model PricingRule {
+  id           Int         @id @default(autoincrement())
+  zoneId       Int?
+  categoryId   Int?
+  billingType  BillingType @default(per_kg)
+  pricePerKg   Float?      @default(50)
+  monthlyFlat  Float?      @default(2000)
+  pricePerBin  Float?      @default(500)
+  currency     String      @default("NGN") @db.VarChar(10)
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  zone     Zone?         @relation(fields: [zoneId], references: [id])
+  category WasteCategory? @relation(fields: [categoryId], references: [id])
+
+  @@map("pricing_rules")
+}
+
+model Bill {
+  id            Int           @id @default(autoincrement())
+  userId        Int
+  month         Int
+  year          Int
+  billingType   BillingType   @default(monthly_flat)
+  totalKg       Float?        @default(0)
+  amountNaira   Float         @default(0)
+  status        PaymentStatus @default(pending)
+  dueDate       DateTime
+  paidAt        DateTime?
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id])
+  payments Payment[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([month, year])
+  @@map("bills")
+}
+
+model Payment {
+  id              Int           @id @default(autoincrement())
+  userId          Int
+  billId          Int?
+  amountNaira     Float
+  bankName        String?       @db.VarChar(100)
+  accountName     String?       @db.VarChar(100)
+  accountNumber   String?       @db.VarChar(20)
+  transferRef     String?       @db.VarChar(100)
+  proofImageUrl   String?
+  status          PaymentStatus @default(pending)
+  confirmedAt     DateTime?
+  confirmedBy     Int?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id])
+  bill  Bill? @relation(fields: [billId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("payments")
 }
 
 model PickupSchedule {
@@ -130,17 +229,18 @@ model PickupSchedule {
   zoneId          Int
   categoryId      Int
   pickupDate      DateTime
-  recurrence      String?        @db.VarChar(50) // daily, weekly, biweekly, monthly
+  recurrence      String?        @db.VarChar(50)
   status          ScheduleStatus @default(scheduled)
   notes           String?
   collectorId     Int?
   truckId         Int?
+  reminderSent    Boolean        @default(false)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  zone             Zone            @relation(fields: [zoneId], references: [id])
-  category         WasteCategory   @relation(fields: [categoryId], references: [id])
-  truck            Truck?          @relation(fields: [truckId], references: [id])
+  zone             Zone             @relation(fields: [zoneId], references: [id])
+  category         WasteCategory    @relation(fields: [categoryId], references: [id])
+  truck            Truck?           @relation(fields: [truckId], references: [id])
   collectionRecord CollectionRecord?
 
   @@index([zoneId])
@@ -166,19 +266,19 @@ model Truck {
 }
 
 model CollectionRecord {
-  id           Int      @id @default(autoincrement())
-  scheduleId   Int      @unique
-  collectorId  Int
-  truckId      Int?
-  quantityKg   Float?
-  notes        String?
+  id            Int      @id @default(autoincrement())
+  scheduleId    Int      @unique
+  collectorId   Int
+  truckId       Int?
+  quantityKg    Float?
+  notes         String?
   proofImageUrl String?
-  completedAt  DateTime @default(now())
-  createdAt    DateTime @default(now())
+  completedAt   DateTime @default(now())
+  createdAt     DateTime @default(now())
 
-  schedule   PickupSchedule @relation(fields: [scheduleId], references: [id])
-  collector  User           @relation(fields: [collectorId], references: [id])
-  truck      Truck?         @relation(fields: [truckId], references: [id])
+  schedule  PickupSchedule @relation(fields: [scheduleId], references: [id])
+  collector User           @relation(fields: [collectorId], references: [id])
+  truck     Truck?         @relation(fields: [truckId], references: [id])
 
   @@index([collectorId])
   @@index([completedAt])
@@ -231,20 +331,22 @@ model Report {
 }
 
 model RecyclingCenter {
-  id          Int      @id @default(autoincrement())
-  name        String   @db.VarChar(200)
-  address     String
-  latitude    Float
-  longitude   Float
-  phone       String?  @db.VarChar(20)
-  email       String?  @db.VarChar(255)
-  website     String?
-  zoneId      Int?
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(200)
+  address      String
+  latitude     Float
+  longitude    Float
+  phone        String?  @db.VarChar(20)
+  email        String?  @db.VarChar(255)
+  website      String?
+  zoneId       Int?
+  state        String?  @db.VarChar(60)
+  lga          String?  @db.VarChar(100)
   openingHours String?
   acceptedTypes String[]
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   zone Zone? @relation(fields: [zoneId], references: [id])
 
@@ -286,17 +388,83 @@ model Announcement {
 }
 
 model WasteGuideItem {
-  id            Int      @id @default(autoincrement())
-  itemName      String   @db.VarChar(200)
-  aliases       String[]
-  categorySlug  String   @db.VarChar(100)
+  id             Int      @id @default(autoincrement())
+  itemName       String   @db.VarChar(200)
+  aliases        String[]
+  categorySlug   String   @db.VarChar(100)
   disposalMethod String
-  binColor      String   @db.VarChar(50)
-  specialNotes  String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  binColor       String   @db.VarChar(50)
+  specialNotes   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([itemName])
   @@index([categorySlug])
   @@map("waste_guide_items")
+}
+
+// ─── QUIZ / GAMIFICATION ─────────────────────────────────────
+
+model Quiz {
+  id          Int            @id @default(autoincrement())
+  title       String         @db.VarChar(200)
+  description String?
+  category    String?        @db.VarChar(100)
+  difficulty  QuizDifficulty @default(easy)
+  timeLimit   Int            @default(30)
+  points      Int            @default(10)
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  questions    QuizQuestion[]
+  attempts     QuizAttempt[]
+
+  @@map("quizzes")
+}
+
+model QuizQuestion {
+  id            Int      @id @default(autoincrement())
+  quizId        Int
+  question      String
+  options       String[]
+  correctAnswer Int
+  explanation   String?
+  points        Int      @default(5)
+  createdAt     DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId])
+  @@map("quiz_questions")
+}
+
+model QuizAttempt {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  quizId      Int
+  score       Int      @default(0)
+  totalPoints Int      @default(0)
+  passed      Boolean  @default(false)
+  answers     Json
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+  quiz Quiz @relation(fields: [quizId], references: [id])
+
+  @@index([userId])
+  @@index([quizId])
+  @@map("quiz_attempts")
+}
+
+model Leaderboard {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  points    Int      @default(0)
+  rank      Int?
+  badges    String[]
+  updatedAt DateTime @updatedAt
+
+  @@index([points])
+  @@map("leaderboard")
 }

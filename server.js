@@ -15,6 +15,10 @@ const analyticsRoutes = require('./src/routes/analytics');
 const guideRoutes = require('./src/routes/guide');
 const centerRoutes = require('./src/routes/centers');
 const zoneRoutes = require('./src/routes/zones');
+const billingRoutes = require('./src/routes/billing');
+const aiRoutes = require('./src/routes/ai');
+const quizRoutes = require('./src/routes/quiz');
+const { startCronJobs } = require('./src/services/cron.service');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -52,6 +56,9 @@ app.use('/api/analytics', analyticsRoutes);
 app.use('/api/guide', guideRoutes);
 app.use('/api/centers', centerRoutes);
 app.use('/api/zones', zoneRoutes);
+app.use('/api/billing', billingRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/quiz', quizRoutes);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -74,6 +81,7 @@ if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`🚀  Waste Scheduler API running on port ${PORT}`);
     console.log(`   Health: http://localhost:${PORT}/api/health`);
+    startCronJobs();
   });
 }
 
