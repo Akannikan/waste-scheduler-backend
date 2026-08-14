@@ -21,6 +21,43 @@ router.get('/', authenticate, async (req, res) => {
   }
 });
 
+// ── GET /api/quiz/leaderboard/top  (MUST be before /:id) ─────
+router.get('/leaderboard/top', authenticate, async (req, res) => {
+  try {
+    const top = await prisma.leaderboard.findMany({
+      take: 20,
+      orderBy: { points: 'desc' },
+    });
+
+    const userIds = top.map(e => e.userId);
+    const users = await prisma.user.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, name: true, avatarUrl: true, badges: true },
+    });
+
+    const leaderboard = top.map((entry, index) => {
+      const user = users.find(u => u.id === entry.userId);
+      return {
+        rank: index + 1,
+        userId: entry.userId,
+        name: user?.name || 'Anonymous',
+        avatarUrl: user?.avatarUrl,
+        points: entry.points,
+        badges: user?.badges || [],
+      };
+    });
+
+    const myEntry = await prisma.leaderboard.findUnique({ where: { userId: req.user.id } });
+    const myRank = myEntry
+      ? await prisma.leaderboard.count({ where: { points: { gt: myEntry.points } } }) + 1
+      : null;
+
+    res.json({ leaderboard, myRank, myPoints: myEntry?.points || 0 });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch leaderboard' });
+  }
+});
+
 // ── GET /api/quiz/:id  (quiz with questions) ─────────────────
 router.get('/:id', authenticate, async (req, res) => {
   try {
@@ -144,43 +181,6 @@ router.post(
     }
   }
 );
-
-// ── GET /api/quiz/leaderboard/top ────────────────────────────
-router.get('/leaderboard/top', authenticate, async (req, res) => {
-  try {
-    const top = await prisma.leaderboard.findMany({
-      take: 20,
-      orderBy: { points: 'desc' },
-    });
-
-    // Get user info for each entry
-    const userIds = top.map(e => e.userId);
-    const users = await prisma.user.findMany({
-      where: { id: { in: userIds } },
-      select: { id: true, name: true, avatarUrl: true, badges: true },
-    });
-
-    const leaderboard = top.map((entry, index) => {
-      const user = users.find(u => u.id === entry.userId);
-      return {
-        rank: index + 1,
-        userId: entry.userId,
-        name: user?.name || 'Anonymous',
-        avatarUrl: user?.avatarUrl,
-        points: entry.points,
-        badges: user?.badges || [],
-      };
-    });
-
-    // Get current user's rank
-    const myEntry = await prisma.leaderboard.findUnique({ where: { userId: req.user.id } });
-    const myRank = myEntry ? await prisma.leaderboard.count({ where: { points: { gt: myEntry.points } } }) + 1 : null;
-
-    res.json({ leaderboard, myRank, myPoints: myEntry?.points || 0 });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch leaderboard' });
-  }
-});
 
 // ── POST /api/quiz  (admin create quiz) ──────────────────────
 router.post(
