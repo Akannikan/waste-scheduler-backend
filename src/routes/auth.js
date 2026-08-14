@@ -7,6 +7,7 @@ const { PrismaClient } = require('@prisma/client');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const { sendWelcomeEmail } = require('../services/email.service');
+const passport = require('../config/passport');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -185,3 +186,25 @@ router.post(
 );
 
 module.exports = router;
+
+// ── GET /api/auth/google ──────────────────────────────────────
+router.get(
+  '/google',
+  passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+);
+
+// ── GET /api/auth/google/callback ────────────────────────────
+router.get(
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: `${process.env.CLIENT_URL}/login?error=google_failed` }),
+  (req, res) => {
+    try {
+      const token = signToken(req.user);
+      const userJson = encodeURIComponent(JSON.stringify(safeUser(req.user)));
+      // Redirect to frontend with token in URL (frontend reads and stores it)
+      res.redirect(`${process.env.CLIENT_URL || 'http://localhost:5173'}/auth/callback?token=${token}&user=${userJson}`);
+    } catch (err) {
+      res.redirect(`${process.env.CLIENT_URL}/login?error=token_failed`);
+    }
+  }
+);

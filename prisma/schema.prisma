@@ -91,6 +91,7 @@ model User {
   emailVerified   Boolean   @default(false)
   resetToken      String?
   resetExpires    DateTime?
+  googleId        String?   @unique
   points          Int       @default(0)
   badges          String[]
   createdAt       DateTime  @default(now())
@@ -105,6 +106,11 @@ model User {
   bills              Bill[]
   payments           Payment[]
   quizAttempts       QuizAttempt[]
+  assignmentsGiven   Assignment[]        @relation("AssignedByAdmin")
+  assignmentsReceived Assignment[]       @relation("AssignedToCollector")
+  assignmentMessages AssignmentMessage[] @relation("MessageSender")
+  sentMessages       Message[]           @relation("SentMessages")
+  receivedMessages   Message[]           @relation("ReceivedMessages")
 
   @@index([email])
   @@index([role])

@@ -20,7 +20,10 @@ const aiRoutes = require('./src/routes/ai');
 const quizRoutes = require('./src/routes/quiz');
 const wasteLogRoutes = require('./src/routes/wasteLogs');
 const collectionRecordRoutes = require('./src/routes/collectionRecords');
+const assignmentRoutes = require('./src/routes/assignments');
+const messageRoutes = require('./src/routes/messages');
 const { startCronJobs } = require('./src/services/cron.service');
+const passport = require('./src/config/passport');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -45,6 +48,7 @@ app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 // ── Body parsing ─────────────────────────────────────────────
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use(passport.initialize());
 
 // ── Routes ───────────────────────────────────────────────────
 app.use('/api/auth', authRoutes);
@@ -63,6 +67,8 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/waste-logs', wasteLogRoutes);
 app.use('/api/collection-records', collectionRecordRoutes);
+app.use('/api/assignments', assignmentRoutes);
+app.use('/api/messages', messageRoutes);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
