@@ -18,6 +18,8 @@ const zoneRoutes = require('./src/routes/zones');
 const billingRoutes = require('./src/routes/billing');
 const aiRoutes = require('./src/routes/ai');
 const quizRoutes = require('./src/routes/quiz');
+const wasteLogRoutes = require('./src/routes/wasteLogs');
+const collectionRecordRoutes = require('./src/routes/collectionRecords');
 const { startCronJobs } = require('./src/services/cron.service');
 
 const app = express();
@@ -59,6 +61,8 @@ app.use('/api/zones', zoneRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/quiz', quizRoutes);
+app.use('/api/waste-logs', wasteLogRoutes);
+app.use('/api/collection-records', collectionRecordRoutes);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {

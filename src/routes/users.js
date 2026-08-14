@@ -107,10 +107,10 @@ router.put(
   validate,
   async (req, res) => {
     try {
-      const { name, phone, address, zoneId } = req.body;
+      const { name, phone, address, zoneId, state, lga } = req.body;
       const user = await prisma.user.update({
         where: { id: req.user.id },
-        data: { name, phone, address, zoneId: zoneId ? Number(zoneId) : undefined },
+        data: { name, phone, address, zoneId: zoneId ? Number(zoneId) : undefined, state, lga },
       });
       res.json({ user: safeUser(user) });
     } catch (err) {
