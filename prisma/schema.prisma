@@ -468,3 +468,81 @@ model Leaderboard {
   @@index([points])
   @@map("leaderboard")
 }
+
+// ─── ASSIGNMENT & MESSAGING MODELS ───────────────────────────
+
+enum AssignmentStatus {
+  pending
+  accepted
+  in_progress
+  completed
+  rejected
+}
+
+enum AssignmentPriority {
+  low
+  normal
+  high
+  urgent
+}
+
+model Assignment {
+  id            Int                @id @default(autoincrement())
+  title         String             @db.VarChar(255)
+  description   String
+  adminId       Int
+  collectorId   Int
+  scheduleId    Int?
+  zoneId        Int?
+  status        AssignmentStatus   @default(pending)
+  priority      AssignmentPriority @default(normal)
+  dueDate       DateTime?
+  completedAt   DateTime?
+  notes         String?
+  proofImageUrl String?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  admin     User            @relation("AssignedByAdmin", fields: [adminId], references: [id])
+  collector User            @relation("AssignedToCollector", fields: [collectorId], references: [id])
+  messages  AssignmentMessage[]
+
+  @@index([adminId])
+  @@index([collectorId])
+  @@index([status])
+  @@map("assignments")
+}
+
+model AssignmentMessage {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  senderId     Int
+  message      String
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  sender     User       @relation("MessageSender", fields: [senderId], references: [id])
+
+  @@index([assignmentId])
+  @@index([senderId])
+  @@map("assignment_messages")
+}
+
+model Message {
+  id         Int      @id @default(autoincrement())
+  senderId   Int
+  receiverId Int
+  subject    String?  @db.VarChar(255)
+  body       String
+  isRead     Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  sender   User @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+  @@map("messages")
+}
