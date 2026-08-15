@@ -286,3 +286,52 @@ module.exports = {
   sendBillEmail,
   sendPaymentConfirmedEmail,
 };
+async function sendPasswordResetEmail(user, resetUrl) {
+  const content = `
+    <h2 style="color:#333;margin:0 0 8px;">Password Reset Request</h2>
+    <p style="color:#666;margin:0 0 24px;font-size:14px;">
+      Hi <strong>${user.name}</strong>, we received a request to reset your WasteScheduler password.
+    </p>
+
+    <div style="background:#FFF9C4;border-left:4px solid #F57F17;border-radius:8px;padding:16px 20px;margin-bottom:24px;">
+      <p style="margin:0;color:#666;font-size:13px;">⏰ This link expires in <strong>1 hour</strong></p>
+    </div>
+
+    <div style="text-align:center;margin-bottom:24px;">
+      <a href="${resetUrl}"
+        style="background:linear-gradient(135deg,#2E7D32,#1B5E20);color:#fff;text-decoration:none;
+               padding:16px 36px;border-radius:10px;font-size:16px;font-weight:700;
+               display:inline-block;letter-spacing:0.3px;">
+        Reset My Password →
+      </a>
+    </div>
+
+    <p style="color:#888;font-size:13px;text-align:center;line-height:1.6;">
+      Or copy and paste this link into your browser:<br/>
+      <span style="color:#1976D2;font-size:12px;word-break:break-all;">${resetUrl}</span>
+    </p>
+
+    <div style="border-top:1px solid #eee;margin-top:24px;padding-top:16px;">
+      <p style="color:#999;font-size:12px;text-align:center;margin:0;">
+        If you didn't request a password reset, please ignore this email or contact support
+        if you're concerned about your account security.
+      </p>
+    </div>
+  `;
+
+  return transporter.sendMail({
+    from: process.env.EMAIL_FROM,
+    to: user.email,
+    subject: `🔐 Reset your WasteScheduler password`,
+    html: baseTemplate(content, 'Password Reset'),
+  });
+}
+
+module.exports = {
+  sendWelcomeEmail,
+  sendPickupReminderEmail,
+  sendReportUpdateEmail,
+  sendBillEmail,
+  sendPaymentConfirmedEmail,
+  sendPasswordResetEmail,
+};

@@ -285,3 +285,145 @@ router.post(
 );
 
 module.exports = router;
+
+// ── GET /api/billing/receipt/:billId  (generate receipt) ────
+router.get('/receipt/:billId', authenticate, async (req, res) => {
+  try {
+    const billId = parseInt(req.params.billId);
+    const bill = await prisma.bill.findUnique({
+      where: { id: billId },
+      include: {
+        user: { select: { id: true, name: true, email: true, phone: true, address: true, state: true, lga: true } },
+        payments: { where: { status: 'paid' }, orderBy: { confirmedAt: 'desc' }, take: 1 },
+      },
+    });
+
+    if (!bill) return res.status(404).json({ message: 'Bill not found' });
+
+    // Only the owner or admin can view
+    if (req.user.role !== 'admin' && bill.userId !== req.user.id) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    const payment = bill.payments[0];
+    const monthName = new Date(bill.year, bill.month - 1).toLocaleString('en-NG', { month: 'long', year: 'numeric' });
+
+    // Build HTML receipt
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Waste Fee Receipt — ${monthName}</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f5f5f5; padding: 40px 20px; }
+    .receipt { background: #fff; max-width: 580px; margin: 0 auto; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.12); }
+    .header { background: linear-gradient(135deg,#2E7D32,#1B5E20); padding: 30px 36px; color: #fff; }
+    .header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+    .header p { opacity: 0.8; font-size: 13px; }
+    .badge { background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; margin-top: 8px; }
+    .body { padding: 32px 36px; }
+    .amount-box { background: #F1F8E9; border-radius: 10px; padding: 24px; text-align: center; margin-bottom: 28px; }
+    .amount-box .label { color: #666; font-size: 13px; margin-bottom: 6px; }
+    .amount-box .amount { font-size: 42px; font-weight: 800; color: #2E7D32; line-height: 1; }
+    .amount-box .month { color: #888; font-size: 14px; margin-top: 6px; }
+    .section { margin-bottom: 24px; }
+    .section h3 { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 12px; }
+    .row { display: flex; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid #f3f4f6; font-size: 14px; }
+    .row .key { color: #666; }
+    .row .val { font-weight: 600; color: #1a1a2e; text-align: right; max-width: 60%; }
+    .status-paid { background: #E8F5E9; color: #2E7D32; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .status-pending { background: #FFF9C4; color: #F57F17; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .footer { background: #1B5E20; padding: 18px 36px; text-align: center; color: rgba(255,255,255,0.7); font-size: 12px; }
+    .ng-bar { height: 4px; background: linear-gradient(90deg,#008751 33%,#fff 33%,#fff 66%,#008751 66%); }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .receipt { box-shadow: none; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <div class="receipt">
+    <div class="ng-bar"></div>
+    <div class="header">
+      <div style="font-size:28px;margin-bottom:8px;">♻️</div>
+      <h1>WasteScheduler Nigeria</h1>
+      <p>Waste Management Fee Receipt</p>
+      <span class="badge">Receipt #WST-${String(bill.id).padStart(6,'0')}</span>
+    </div>
+
+    <div class="body">
+      <div class="amount-box">
+        <div class="label">Amount ${bill.status === 'paid' ? 'Paid' : 'Due'}</div>
+        <div class="amount">₦${Number(bill.amountNaira).toLocaleString('en-NG')}</div>
+        <div class="month">${monthName}</div>
+        <div style="margin-top:10px;">
+          <span class="${bill.status === 'paid' ? 'status-paid' : 'status-pending'}">
+            ${bill.status === 'paid' ? '✅ Paid' : '⏳ Pending'}
+          </span>
+        </div>
+      </div>
+
+      <div class="section">
+        <h3>Resident Details</h3>
+        ${[
+          ['Name', bill.user.name],
+          ['Email', bill.user.email],
+          ['Phone', bill.user.phone || '—'],
+          ['Address', bill.user.address || '—'],
+          ['State / LGA', bill.user.state ? `${bill.user.state}${bill.user.lga ? ' / ' + bill.user.lga : ''}` : '—'],
+        ].map(([k,v]) => `<div class="row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('')}
+      </div>
+
+      <div class="section">
+        <h3>Bill Details</h3>
+        ${[
+          ['Bill Period', monthName],
+          ['Billing Type', bill.billingType.replace('_',' ').replace(/\b\w/g,c=>c.toUpperCase())],
+          ['Due Date', new Date(bill.dueDate).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'})],
+          ['Bill Reference', `WST-${String(bill.id).padStart(6,'0')}`],
+        ].map(([k,v]) => `<div class="row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('')}
+      </div>
+
+      ${payment ? `
+      <div class="section">
+        <h3>Payment Details</h3>
+        ${[
+          ['Amount Paid', `₦${Number(payment.amountNaira).toLocaleString('en-NG')}`],
+          ['Transfer Reference', payment.transferRef || '—'],
+          ['Bank', payment.bankName || process.env.BANK_NAME || 'First Bank Nigeria'],
+          ['Confirmed On', payment.confirmedAt ? new Date(payment.confirmedAt).toLocaleDateString('en-NG',{day:'numeric',month:'long',year:'numeric'}) : '—'],
+        ].map(([k,v]) => `<div class="row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('')}
+      </div>
+      ` : `
+      <div class="section">
+        <h3>Payment Instructions</h3>
+        <div style="background:#FFF9C4;border-radius:8px;padding:14px 18px;font-size:13px;line-height:1.7;">
+          <strong>Transfer to:</strong><br/>
+          🏦 ${process.env.BANK_NAME || 'First Bank Nigeria'}<br/>
+          Account: <strong>${process.env.BANK_ACCOUNT_NUMBER || '3012345678'}</strong><br/>
+          Name: ${process.env.BANK_ACCOUNT_NAME || 'WasteScheduler Nigeria Ltd'}
+        </div>
+      </div>
+      `}
+    </div>
+
+    <div class="footer">
+      © ${new Date().getFullYear()} WasteScheduler Nigeria · Building a Cleaner Nigeria 🇳🇬<br/>
+      Generated: ${new Date().toLocaleString('en-NG')}
+    </div>
+    <div class="ng-bar"></div>
+  </div>
+
+  <script>window.onload = function(){ window.print(); }</script>
+</body>
+</html>`;
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (err) {
+    console.error('[receipt]', err);
+    res.status(500).json({ message: 'Failed to generate receipt' });
+  }
+});

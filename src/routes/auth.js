@@ -6,7 +6,7 @@ const { body } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
-const { sendWelcomeEmail } = require('../services/email.service');
+const { sendWelcomeEmail, sendPasswordResetEmail } = require('../services/email.service');
 const passport = require('../config/passport');
 
 const router = express.Router();
@@ -139,6 +139,11 @@ router.post(
       // For development: return token in response body
       const resetUrl = `${process.env.CLIENT_URL || 'http://localhost:5173'}/reset-password?token=${resetToken}`;
       console.log(`[forgot-password] Reset URL for ${email}: ${resetUrl}`);
+
+      // Send real email (non-blocking)
+      sendPasswordResetEmail(user, resetUrl).catch(e =>
+        console.error('[forgot-password] email error:', e.message)
+      );
 
       res.json({ message: 'If that email exists, a reset link has been sent.', ...(process.env.NODE_ENV !== 'production' && { resetUrl }) });
     } catch (err) {
