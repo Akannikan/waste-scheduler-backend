@@ -36,47 +36,105 @@ async function ensureQuizData() {
     const quizCount = await prisma.quiz.count();
     if (quizCount > 0) return;
 
-    console.log('[BOOTSTRAP] No quizzes found. Creating default quiz set...');
+    console.log('[BOOTSTRAP] No quizzes found. Creating a richer default quiz set...');
 
-    await prisma.quiz.create({
-      data: {
+    const quizTemplates = [
+      {
         title: 'Waste Sorting Basics',
-        description: 'Test your knowledge of proper waste sorting and recycling in Nigeria',
+        description: 'Quick recycling checks for everyday waste sorting.',
         category: 'recycling',
         difficulty: 'easy',
         timeLimit: 60,
         points: 50,
-        questions: {
-          create: [
-            { question: 'Which bin should you use for plastic water bottles?', options: ['Green Bin', 'Blue Bin', 'Brown Bin', 'Grey Bin'], correctAnswer: 1, explanation: 'Plastic bottles go in the Blue Bin for recycling.', points: 10 },
-            { question: 'What should you do with sachet water bags (pure water nylons)?', options: ['Burn them', 'Throw on the street', 'Collect and put in Blue Bin', 'Pour in the gutter'], correctAnswer: 2, explanation: 'Sachet bags go in the Blue Bin. Littering them causes flooding in Lagos!', points: 10 },
-            { question: 'Which waste type is collected in the Brown Bin?', options: ['Electronic waste', 'Glass bottles', 'Food scraps and garden waste', 'Metal cans'], correctAnswer: 2, explanation: 'Organic waste like food scraps goes in the Brown Bin for composting.', points: 10 },
-            { question: 'Where should you take an old generator battery?', options: ['Brown Bin', 'Regular trash', 'Hazardous waste facility', 'Throw in the bush'], correctAnswer: 2, explanation: 'Generator batteries contain lead acid — extremely dangerous. Always take to a hazardous waste facility.', points: 10 },
-            { question: 'Which of these is NOT recyclable in a regular bin?', options: ['Cardboard box', 'Glass jar', 'Used engine oil', 'Aluminium can'], correctAnswer: 2, explanation: 'Used engine oil is hazardous and must never go in regular bins. Take it to a collection point.', points: 10 },
-          ],
-        },
+        questions: [
+          { question: 'Which bin should you use for plastic water bottles?', options: ['Green Bin', 'Blue Bin', 'Brown Bin', 'Grey Bin'], correctAnswer: 1, explanation: 'Plastic bottles go in the Blue Bin for recycling.', points: 10 },
+          { question: 'What should you do with sachet water bags?', options: ['Burn them', 'Throw in the gutter', 'Collect and put in Blue Bin', 'Leave beside the road'], correctAnswer: 2, explanation: 'Sachet bags belong in the Blue Bin to prevent drainage blockages.', points: 10 },
+          { question: 'Which waste type goes in the Brown Bin?', options: ['Food scraps and garden waste', 'Broken phones', 'Metal cans', 'Old newspapers'], correctAnswer: 0, explanation: 'Food scraps and garden waste are organic and should be composted.', points: 10 },
+          { question: 'Which item should not be thrown in a regular waste bin?', options: ['Glass jar', 'Cardboard box', 'Used engine oil', 'Aluminium can'], correctAnswer: 2, explanation: 'Used engine oil is hazardous and should be taken to a proper collection point.', points: 15 },
+          { question: 'A used battery should be taken to which place?', options: ['The nearest drain', 'The regular bin', 'A hazardous waste facility', 'Open field'], correctAnswer: 2, explanation: 'Old batteries are hazardous and must be disposed of safely.', points: 15 },
+        ],
       },
-    });
-
-    await prisma.quiz.create({
-      data: {
-        title: 'Nigerian Environment & Recycling',
-        description: 'Advanced quiz on environmental impact and recycling in Nigeria',
-        category: 'environment',
+      {
+        title: 'Compost & Organic Waste',
+        description: 'Learn how organic waste can become useful compost.',
+        category: 'organic',
+        difficulty: 'easy',
+        timeLimit: 75,
+        points: 60,
+        questions: [
+          { question: 'Which material is best for composting?', options: ['Plastic wrappers', 'Cooked meat', 'Fruit peels', 'Used batteries'], correctAnswer: 2, explanation: 'Fruit peels and food scraps are ideal for composting.', points: 10 },
+          { question: 'What is the best practice for compost?', options: ['Mix dry and wet materials', 'Burn everything', 'Throw in drains', 'Keep under water'], correctAnswer: 0, explanation: 'A balance of dry and wet materials helps compost break down well.', points: 10 },
+          { question: 'Which item should not be composted?', options: ['Vegetable peels', 'Leaves', 'Plastic bags', 'Coffee grounds'], correctAnswer: 2, explanation: 'Plastic does not decompose and contaminates the compost.', points: 10 },
+          { question: 'Why is composting useful?', options: ['It creates fumes', 'It reduces landfill waste', 'It makes rubbish heavier', 'It attracts pests'], correctAnswer: 1, explanation: 'Composting reduces waste and turns organic matter into useful soil conditioner.', points: 15 },
+          { question: 'What should you do with oily food waste?', options: ['Put in the brown bin', 'Mix it in compost', 'Avoid putting it in compost', 'Put it in the drain'], correctAnswer: 2, explanation: 'Oily foods can slow composting and create bad odour, so keep those out.', points: 15 },
+          { question: 'Which is a good composting material?', options: ['Broken glass', 'Dry leaves', 'Used engine oil', 'Tin cans'], correctAnswer: 1, explanation: 'Dry leaves are a common brown compost ingredient.', points: 10 },
+        ],
+      },
+      {
+        title: 'E-Waste Safety',
+        description: 'Know how to safely dispose of electronics and batteries.',
+        category: 'e-waste',
         difficulty: 'medium',
         timeLimit: 90,
         points: 75,
-        questions: {
-          create: [
-            { question: 'What does LAWMA stand for?', options: ['Lagos Area Waste Management Authority', 'Lagos Waste Management Authority', 'Lagos Area Waste Motor Authority', 'Lagos Automated Waste Management Agency'], correctAnswer: 1, explanation: 'LAWMA — Lagos Waste Management Authority — oversees waste collection in Lagos State.', points: 15 },
-            { question: 'What is the main cause of flooding in Lagos during rainy season?', options: ['Too much rain only', 'Blocked drains from plastic waste', 'Lagos being below sea level', 'River overflow only'], correctAnswer: 1, explanation: 'Sachet bags and plastic waste clog drainage channels, causing flooding during heavy rains.', points: 15 },
-            { question: 'How many years does a plastic bottle take to decompose?', options: ['10 years', '50 years', '450 years', '10,000 years'], correctAnswer: 2, explanation: 'A plastic bottle takes approximately 450 years to fully decompose in a landfill.', points: 15 },
-            { question: 'What type of waste makes up the largest portion of Nigerian household waste?', options: ['Plastic', 'Organic/food waste', 'Paper', 'Metal'], correctAnswer: 1, explanation: 'Organic/food waste makes up over 50% of Nigerian household waste, making composting very impactful.', points: 15 },
-            { question: 'Which PSP means in Nigerian waste management?', options: ['Private Sector Participation', 'Public Sanitation Program', 'Port Sanitation Partnership', 'Private Sanitation Personnel'], correctAnswer: 0, explanation: 'PSP (Private Sector Participation) refers to private waste collectors licensed to operate in Nigerian cities.', points: 15 },
-          ],
-        },
+        questions: [
+          { question: 'What should you do before disposing of an old phone?', options: ['Keep the SIM card in place', 'Wipe personal data', 'Throw it in the drain', 'Put it in the brown bin'], correctAnswer: 1, explanation: 'Wiping personal data helps protect your privacy before e-waste disposal.', points: 15 },
+          { question: 'Which item is electronic waste?', options: ['Cardboard box', 'Used laptop', 'Vegetable peel', 'Plastic bottle'], correctAnswer: 1, explanation: 'Old laptops and phones are part of e-waste.', points: 10 },
+          { question: 'Why is e-waste dangerous to dump?', options: ['It smells nice', 'It contains harmful chemicals', 'It is light', 'It is safe in the soil'], correctAnswer: 1, explanation: 'E-waste can contain hazardous chemicals and metals.', points: 15 },
+          { question: 'Where is the best place for old electronics?', options: ['Specialized e-waste drop-off', 'Street gutter', 'Blue bin', 'Burn pile'], correctAnswer: 0, explanation: 'Electronics should go to a designated e-waste collection center.', points: 15 },
+          { question: 'Which item is most likely to be an e-waste product?', options: ['A kettle', 'A used tyre', 'A mobile phone', 'A newspaper'], correctAnswer: 2, explanation: 'A mobile phone is a classic example of electronic waste.', points: 10 },
+          { question: 'Why separate batteries from e-waste?', options: ['They do not matter', 'They can be hazardous', 'They are compostable', 'They are safe to burn'], correctAnswer: 1, explanation: 'Batteries can be hazardous and should be handled separately.', points: 15 },
+        ],
       },
-    });
+      {
+        title: 'Hazardous Waste Essentials',
+        description: 'Protect your community by handling dangerous waste correctly.',
+        category: 'hazardous',
+        difficulty: 'hard',
+        timeLimit: 90,
+        points: 90,
+        questions: [
+          { question: 'Which item is hazardous waste?', options: ['Glass bottle', 'Plastic bottle', 'Used engine oil', 'Paper'], correctAnswer: 2, explanation: 'Used engine oil contains harmful chemicals and must be handled safely.', points: 15 },
+          { question: 'What should you never do with chemicals?', options: ['Store them properly', 'Take them to a facility', 'Pour them down the drain', 'Keep them sealed'], correctAnswer: 2, explanation: 'Never pour hazardous chemicals down the drain or into the ground.', points: 15 },
+          { question: 'Which of these might contain lead acid?', options: ['Generator battery', 'Plastic wrapper', 'Paper bag', 'Fruit peel'], correctAnswer: 0, explanation: 'Generator batteries often contain lead acid and require special disposal.', points: 15 },
+          { question: 'Why is hazardous waste not safe in a regular waste bin?', options: ['It is too light', 'It can contaminate waste streams', 'It smells good', 'It is recyclable'], correctAnswer: 1, explanation: 'Hazardous waste can contaminate the environment and harm people.', points: 15 },
+          { question: 'The safest action with paint leftovers is to?', options: ['Pour into a drain', 'Leave them in the sun', 'Take them to a hazardous collection point', 'Burn them in the yard'], correctAnswer: 2, explanation: 'Paints and solvents should be collected professionally for safe disposal.', points: 15 },
+          { question: 'Which statement is correct?', options: ['All waste can be poured away', 'Hazardous waste is safe in normal bins', 'Hazardous waste needs special handling', 'Batteries are harmless'], correctAnswer: 2, explanation: 'Hazardous waste requires special handling to protect people and the environment.', points: 15 },
+        ],
+      },
+      {
+        title: 'Community Cleanliness',
+        description: 'Squares of environmental responsibility for daily living.',
+        category: 'community',
+        difficulty: 'medium',
+        timeLimit: 75,
+        points: 70,
+        questions: [
+          { question: 'Why is littering harmful?', options: ['It collects dust', 'It blocks drains and pollutes the environment', 'It is a way to recycle', 'It reduces traffic'], correctAnswer: 1, explanation: 'Litter can clog drains and damage public health and ecosystems.', points: 10 },
+          { question: 'What helps the environment most?', options: ['Burning waste', 'Reducing waste and recycling properly', 'Dumping in empty lots', 'Leaving waste in the street'], correctAnswer: 1, explanation: 'Reducing waste and sorting correctly keeps the environment cleaner.', points: 15 },
+          { question: 'Which action is a good community practice?', options: ['Throwing waste in drainage channels', 'Separating recyclable waste', 'Leaving old tyres on the street', 'Burning plastic wrappers'], correctAnswer: 1, explanation: 'Separating recyclable waste supports cleaner communities and easier collection.', points: 15 },
+          { question: 'What is a common result of blocked drains?', options: ['Higher rainfall', 'Flooding', 'More trees', 'Better roads'], correctAnswer: 1, explanation: 'Blocked drains often lead to flooding during heavy rains.', points: 10 },
+          { question: 'What is the best way to reduce waste?', options: ['Use items more than once', 'Throw them away immediately', 'Burn them often', 'Create more litter'], correctAnswer: 0, explanation: 'Reusing items and proper sorting lower the amount of waste entering landfills.', points: 15 },
+        ],
+      },
+    ];
+
+    for (const template of quizTemplates) {
+      await prisma.quiz.create({
+        data: {
+          ...template,
+          questions: {
+            create: template.questions.map((q) => ({
+              question: q.question,
+              options: q.options,
+              correctAnswer: q.correctAnswer,
+              explanation: q.explanation,
+              points: q.points,
+            })),
+          },
+        },
+      });
+    }
 
     console.log('[BOOTSTRAP] Default quiz data created successfully.');
   } catch (err) {

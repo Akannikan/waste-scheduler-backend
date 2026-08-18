@@ -7,6 +7,15 @@ const { validate } = require('../middleware/validate');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+function shuffleArray(items) {
+  const arr = [...items];
+  for (let i = arr.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
 // ── GET /api/quiz  (all active quizzes) ──────────────────────
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -70,10 +79,10 @@ router.get('/:id', authenticate, async (req, res) => {
     // Remove correct answers from response (prevent cheating)
     const safeQuiz = {
       ...quiz,
-      questions: quiz.questions.map(q => ({
+      questions: shuffleArray(quiz.questions).map(q => ({
         id: q.id,
         question: q.question,
-        options: q.options,
+        options: shuffleArray(q.options),
         points: q.points,
         // correctAnswer NOT sent to client
       })),
