@@ -7,15 +7,38 @@ const { validate } = require('../middleware/validate');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+// ── DIAGNOSTIC: Check if table exists ──────────────────────
+router.get('/diagnostic/table-check', async (req, res) => {
+  try {
+    const count = await prisma.assignment.count();
+    res.json({ 
+      status: 'ok', 
+      message: 'Assignments table exists',
+      assignmentCount: count,
+      timestamp: new Date().toISOString()
+    });
+  } catch (err) {
+    res.status(500).json({ 
+      status: 'error',
+      message: `Table check failed: ${err.message}`,
+      code: err.code
+    });
+  }
+});
+
 // ── GET /api/assignments  (admin sees all, collector sees own) ─
 router.get('/', authenticate, async (req, res) => {
   try {
+    console.log(`[GET /assignments] User role: ${req.user.role}, ID: ${req.user.id}`);
+    
     const where = req.user.role === 'admin'
       ? {}
       : { collectorId: req.user.id };
 
     if (req.query.status) where.status = req.query.status;
 
+    console.log(`[GET /assignments] Query where: ${JSON.stringify(where)}`);
+    
     const assignments = await prisma.assignment.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -25,6 +48,8 @@ router.get('/', authenticate, async (req, res) => {
         _count: { select: { messages: true } },
       },
     });
+
+    console.log(`[GET /assignments] Found ${assignments.length} assignments`);
 
     // Unread message counts per assignment
     const unreadCounts = await Promise.all(
@@ -38,8 +63,8 @@ router.get('/', authenticate, async (req, res) => {
     const result = assignments.map((a, i) => ({ ...a, unreadMessages: unreadCounts[i] }));
     res.json({ assignments: result });
   } catch (err) {
-    console.error('[GET /assignments]', err);
-    res.status(500).json({ message: 'Failed to fetch assignments' });
+    console.error('[GET /assignments] ERROR:', err.message, err.code);
+    res.status(500).json({ message: `Failed to fetch assignments: ${err.message}` });
   }
 });
 
