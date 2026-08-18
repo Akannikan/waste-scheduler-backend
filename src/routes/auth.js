@@ -40,7 +40,7 @@ router.post(
   validate,
   async (req, res) => {
     try {
-      const { name, email, password, role = 'resident', phone, address, zoneId } = req.body;
+      const { name, email, password, role = 'resident', phone, address, state, lga, zoneId } = req.body;
 
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
@@ -49,7 +49,7 @@ router.post(
 
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await prisma.user.create({
-        data: { name, email, passwordHash, role, phone, address, zoneId: zoneId ? Number(zoneId) : undefined },
+        data: { name, email, passwordHash, role, phone, address, state, lga, zoneId: zoneId ? Number(zoneId) : undefined },
       });
 
       const token = signToken(user);

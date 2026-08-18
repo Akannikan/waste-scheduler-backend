@@ -86,6 +86,10 @@ model User {
   state           String?   @db.VarChar(60)
   lga             String?   @db.VarChar(100)
   avatarUrl       String?
+  theme           String    @default("light") @db.VarChar(30)
+  fontFamily      String    @default("Inter") @db.VarChar(60)
+  fontSize        Int       @default(16)
+  reminderEmails  Boolean   @default(true)
   zoneId          Int?
   isActive        Boolean   @default(true)
   emailVerified   Boolean   @default(false)

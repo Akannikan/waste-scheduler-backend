@@ -103,14 +103,21 @@ router.put(
     body('phone').optional().isMobilePhone().withMessage('Invalid phone number'),
     body('address').optional().isString(),
     body('zoneId').optional().isInt(),
+    body('state').optional().isString().isLength({ max: 60 }),
+    body('lga').optional().isString().isLength({ max: 100 }),
+    body('avatarUrl').optional().isString().isLength({ max: 7000000 }),
+    body('theme').optional().isIn(['light', 'dark', 'forest', 'sunset']),
+    body('fontFamily').optional().isIn(['Inter', 'Poppins', 'Playfair Display', 'Nunito']),
+    body('fontSize').optional().isInt({ min: 14, max: 20 }),
+    body('reminderEmails').optional().isBoolean(),
   ],
   validate,
   async (req, res) => {
     try {
-      const { name, phone, address, zoneId, state, lga } = req.body;
+      const { name, phone, address, zoneId, state, lga, avatarUrl, theme, fontFamily, fontSize, reminderEmails } = req.body;
       const user = await prisma.user.update({
         where: { id: req.user.id },
-        data: { name, phone, address, zoneId: zoneId ? Number(zoneId) : undefined, state, lga },
+        data: { name, phone, address, zoneId: zoneId ? Number(zoneId) : undefined, state, lga, avatarUrl, theme, fontFamily, fontSize: fontSize ? Number(fontSize) : undefined, reminderEmails },
       });
       res.json({ user: safeUser(user) });
     } catch (err) {

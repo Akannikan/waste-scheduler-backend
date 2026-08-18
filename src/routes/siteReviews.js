@@ -18,6 +18,9 @@ function formatReview(review) {
       id: user?.id ?? null,
       name: user?.name || 'Community member',
       avatarUrl: user?.avatarUrl || null,
+      state: user?.state || null,
+      lga: user?.lga || null,
+      zone: user?.zone?.name || null,
     },
   };
 }
@@ -26,7 +29,7 @@ router.get('/', async (req, res) => {
   try {
     const reviews = await prisma.siteReview.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+      include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
     });
 
     res.json({ reviews: reviews.map(formatReview) });
@@ -52,7 +55,7 @@ router.post(
         where: { userId: req.user.id },
         update: { rating, comment },
         create: { userId: req.user.id, rating, comment },
-        include: { user: { select: { id: true, name: true, avatarUrl: true } } },
+        include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
       });
 
       res.status(201).json({ review: formatReview(review) });

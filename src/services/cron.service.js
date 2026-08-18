@@ -46,7 +46,7 @@ function startCronJobs() {
       // Send 24h reminders to all users in the zone
       for (const schedule of schedulesFor24h) {
         const users = await prisma.user.findMany({
-          where: { zoneId: schedule.zoneId, isActive: true, role: 'resident' },
+          where: { zoneId: schedule.zoneId, isActive: true, role: 'resident', reminderEmails: true },
         });
 
         for (const user of users) {
@@ -77,7 +77,7 @@ function startCronJobs() {
       // Send 2h reminders
       for (const schedule of schedulesFor2h) {
         const users = await prisma.user.findMany({
-          where: { zoneId: schedule.zoneId, isActive: true, role: 'resident' },
+          where: { zoneId: schedule.zoneId, isActive: true, role: 'resident', reminderEmails: true },
         });
 
         for (const user of users) {
