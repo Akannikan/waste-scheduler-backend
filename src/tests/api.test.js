@@ -80,6 +80,17 @@ test('GET /api/announcements is public → 200 or 500', async () => {
   assert.ok([200, 500].includes(res.status));
 });
 
+// ── Site reviews / ratings ───────────────────────────────────
+test('GET /api/site-reviews is public → 200 or 500', async () => {
+  const res = await request(app).get('/api/site-reviews');
+  assert.ok([200, 500].includes(res.status));
+});
+
+test('POST /api/site-reviews requires auth → 401', async () => {
+  const res = await request(app).post('/api/site-reviews').send({ rating: 5, comment: 'Good app' });
+  assert.equal(res.status, 401);
+});
+
 // ── 404 handler ───────────────────────────────────────────────
 test('GET /api/nonexistent → 404', async () => {
   const res = await request(app).get('/api/nonexistent-route');

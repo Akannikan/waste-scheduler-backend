@@ -24,7 +24,24 @@ router.get('/', authenticate, async (req, res) => {
       include: { _count: { select: { questions: true, attempts: true } } },
       orderBy: { createdAt: 'desc' },
     });
-    res.json({ quizzes });
+
+    const passedAttempts = await prisma.quizAttempt.findMany({
+      where: { userId: req.user.id, passed: true },
+      include: { quiz: { select: { difficulty: true } } },
+    });
+
+    const passedDifficulties = new Set(passedAttempts.map(attempt => attempt.quiz.difficulty));
+
+    const quizzesWithUnlock = quizzes.map((quiz) => {
+      const isUnlocked =
+        quiz.difficulty === 'easy' ||
+        (quiz.difficulty === 'medium' && passedDifficulties.has('easy')) ||
+        (quiz.difficulty === 'hard' && passedDifficulties.has('medium'));
+
+      return { ...quiz, isUnlocked };
+    });
+
+    res.json({ quizzes: quizzesWithUnlock });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch quizzes' });
   }
@@ -82,7 +99,7 @@ router.get('/:id', authenticate, async (req, res) => {
       questions: shuffleArray(quiz.questions).map(q => ({
         id: q.id,
         question: q.question,
-        options: shuffleArray(q.options),
+        options: q.options,
         points: q.points,
         // correctAnswer NOT sent to client
       })),
@@ -119,15 +136,22 @@ router.post(
 
       for (const question of quiz.questions) {
         totalPoints += question.points;
-        const userAnswer = answers[question.id];
-        const correct = userAnswer === question.correctAnswer;
+        const rawUserAnswer = answers[question.id];
+        const normalizedUserAnswer =
+          typeof rawUserAnswer === 'number'
+            ? rawUserAnswer
+            : typeof rawUserAnswer === 'string'
+              ? question.options.findIndex(option => option.toLowerCase() === rawUserAnswer.trim().toLowerCase())
+              : undefined;
+
+        const correct = normalizedUserAnswer === question.correctAnswer;
         if (correct) score += question.points;
 
         results.push({
           questionId: question.id,
           question: question.question,
-          correctAnswer: question.correctAnswer,
-          userAnswer,
+          correctAnswer: question.options[question.correctAnswer],
+          userAnswer: rawUserAnswer ?? null,
           correct,
           explanation: question.explanation,
           points: correct ? question.points : 0,
