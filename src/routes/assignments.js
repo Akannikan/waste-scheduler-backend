@@ -7,21 +7,20 @@ const { validate } = require('../middleware/validate');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// ── DIAGNOSTIC: Check if table exists ──────────────────────
-router.get('/diagnostic/table-check', async (req, res) => {
+// ── Health check (public) ─────────────────────────────────────
+router.get('/health', async (req, res) => {
   try {
     const count = await prisma.assignment.count();
     res.json({ 
-      status: 'ok', 
-      message: 'Assignments table exists',
-      assignmentCount: count,
-      timestamp: new Date().toISOString()
+      status: 'ok',
+      route: 'assignments',
+      message: 'Assignments route is working',
+      assignmentCount: count
     });
   } catch (err) {
     res.status(500).json({ 
       status: 'error',
-      message: `Table check failed: ${err.message}`,
-      code: err.code
+      message: err.message
     });
   }
 });
