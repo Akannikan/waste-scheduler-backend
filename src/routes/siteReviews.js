@@ -7,6 +7,22 @@ const { validate } = require('../middleware/validate');
 const router = express.Router();
 const prisma = new PrismaClient();
 
+async function ensureReviewTable() {
+  await prisma.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS "site_reviews" (
+      "id" SERIAL PRIMARY KEY,
+      "userId" INTEGER NOT NULL UNIQUE,
+      "rating" INTEGER NOT NULL DEFAULT 5,
+      "comment" TEXT NOT NULL,
+      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      CONSTRAINT "site_reviews_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
+    )
+  `);
+}
+
+const reviewUserSelect = { id: true, name: true, avatarUrl: true, state: true, lga: true };
+
 function formatReview(review) {
   const user = review.user;
   return {
@@ -27,9 +43,10 @@ function formatReview(review) {
 
 router.get('/', async (req, res) => {
   try {
+    await ensureReviewTable();
     const reviews = await prisma.siteReview.findMany({
       orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
+      include: { user: { select: reviewUserSelect } },
     });
 
     res.json({ reviews: reviews.map(formatReview) });
@@ -50,17 +67,18 @@ router.post(
   async (req, res) => {
     try {
       const { rating, comment } = req.body;
+      await ensureReviewTable();
 
       const existingReview = await prisma.siteReview.findFirst({ where: { userId: req.user.id } });
       const review = existingReview
         ? await prisma.siteReview.update({
             where: { id: existingReview.id },
             data: { rating: Number(rating), comment },
-            include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
+            include: { user: { select: reviewUserSelect } },
           })
         : await prisma.siteReview.create({
             data: { userId: req.user.id, rating: Number(rating), comment },
-            include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
+            include: { user: { select: reviewUserSelect } },
           });
 
       res.status(201).json({ review: formatReview(review) });
