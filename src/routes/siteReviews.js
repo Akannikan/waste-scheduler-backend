@@ -21,22 +21,19 @@ async function ensureReviewTable() {
   `);
 }
 
-const reviewUserSelect = { id: true, name: true, avatarUrl: true, state: true, lga: true };
-
 function formatReview(review) {
-  const user = review.user;
   return {
-    id: review.id,
+    id: Number(review.id),
     rating: review.rating,
     comment: review.comment,
     createdAt: review.createdAt,
     user: {
-      id: user?.id ?? null,
-      name: user?.name || 'Community member',
-      avatarUrl: user?.avatarUrl || null,
-      state: user?.state || null,
-      lga: user?.lga || null,
-      zone: user?.zone?.name || null,
+      id: review.userId ?? null,
+      name: review.name || 'Community member',
+      avatarUrl: review.avatarUrl || null,
+      state: review.state || null,
+      lga: review.lga || null,
+      zone: review.zone || null,
     },
   };
 }
@@ -44,10 +41,14 @@ function formatReview(review) {
 router.get('/', async (req, res) => {
   try {
     await ensureReviewTable();
-    const reviews = await prisma.siteReview.findMany({
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: reviewUserSelect } },
-    });
+    const reviews = await prisma.$queryRawUnsafe(`
+      SELECT sr."id", sr."userId", sr."rating", sr."comment", sr."createdAt",
+             u."name", u."avatarUrl", u."state", u."lga", z."name" AS "zone"
+      FROM "site_reviews" sr
+      JOIN "users" u ON u."id" = sr."userId"
+      LEFT JOIN "zones" z ON z."id" = u."zoneId"
+      ORDER BY sr."createdAt" DESC
+    `);
 
     res.json({ reviews: reviews.map(formatReview) });
   } catch (err) {
@@ -69,17 +70,24 @@ router.post(
       const { rating, comment } = req.body;
       await ensureReviewTable();
 
-      const existingReview = await prisma.siteReview.findFirst({ where: { userId: req.user.id } });
-      const review = existingReview
-        ? await prisma.siteReview.update({
-            where: { id: existingReview.id },
-            data: { rating: Number(rating), comment },
-            include: { user: { select: reviewUserSelect } },
-          })
-        : await prisma.siteReview.create({
-            data: { userId: req.user.id, rating: Number(rating), comment },
-            include: { user: { select: reviewUserSelect } },
-          });
+      const reviews = await prisma.$queryRawUnsafe(`
+        INSERT INTO "site_reviews" ("userId", "rating", "comment", "createdAt", "updatedAt")
+        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        ON CONFLICT ("userId") DO UPDATE SET
+          "rating" = EXCLUDED."rating",
+          "comment" = EXCLUDED."comment",
+          "updatedAt" = CURRENT_TIMESTAMP
+        RETURNING "id", "userId", "rating", "comment", "createdAt"
+      `, req.user.id, Number(rating), comment);
+      const savedReview = await prisma.$queryRawUnsafe(`
+        SELECT sr."id", sr."userId", sr."rating", sr."comment", sr."createdAt",
+               u."name", u."avatarUrl", u."state", u."lga", z."name" AS "zone"
+        FROM "site_reviews" sr
+        JOIN "users" u ON u."id" = sr."userId"
+        LEFT JOIN "zones" z ON z."id" = u."zoneId"
+        WHERE sr."id" = $1
+      `, reviews[0].id);
+      const review = savedReview[0];
 
       res.status(201).json({ review: formatReview(review) });
     } catch (err) {
