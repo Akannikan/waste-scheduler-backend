@@ -4,9 +4,22 @@ const { body, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
+const multer = require('multer');
+const fs = require('fs');
+const path = require('path');
 
 const router = express.Router();
 const prisma = new PrismaClient();
+const avatarDir = path.join(__dirname, '../../uploads/avatars');
+fs.mkdirSync(avatarDir, { recursive: true });
+const avatarUpload = multer({
+  storage: multer.diskStorage({
+    destination: avatarDir,
+    filename: (req, file, cb) => cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname).toLowerCase()}`),
+  }),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
+});
 
 function safeUser(user) {
   const { passwordHash, resetToken, resetExpires, ...safe } = user;
@@ -76,6 +89,18 @@ router.get('/me', authenticate, async (req, res) => {
   }
 });
 
+router.post('/me/avatar', authenticate, avatarUpload.single('avatar'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'Upload a JPG, PNG, or WebP image under 2 MB' });
+    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+    const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl } });
+    res.json({ user: safeUser(user) });
+  } catch (err) {
+    if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') return res.status(413).json({ message: 'Image must be smaller than 2 MB' });
+    res.status(400).json({ message: 'Invalid profile image' });
+  }
+});
+
 // ── GET /api/users/:id  (admin or self) ──────────────────────
 router.get('/:id', authenticate, async (req, res) => {
   try {
@@ -105,7 +130,6 @@ router.put(
     body('zoneId').optional().isInt(),
     body('state').optional().isString().isLength({ max: 60 }),
     body('lga').optional().isString().isLength({ max: 100 }),
-    body('avatarUrl').optional().isString().isLength({ max: 7000000 }),
     body('theme').optional().isIn(['light', 'dark', 'forest', 'sunset']),
     body('fontFamily').optional().isIn(['Inter', 'Poppins', 'Playfair Display', 'Nunito']),
     body('fontSize').optional().isInt({ min: 14, max: 20 }),
@@ -114,10 +138,18 @@ router.put(
   validate,
   async (req, res) => {
     try {
-      const { name, phone, address, zoneId, state, lga, avatarUrl, theme, fontFamily, fontSize, reminderEmails } = req.body;
+      const { name, phone, address, zoneId, state, lga, theme, fontFamily, fontSize, reminderEmails } = req.body;
+      let location = { state, lga, zoneId: zoneId ? Number(zoneId) : undefined };
+      if (location.zoneId) {
+        const zone = await prisma.zone.findUnique({ where: { id: location.zoneId } });
+        if (!zone || (state && zone.state !== state) || (lga && zone.lga !== lga)) {
+          return res.status(422).json({ message: 'State, zone, and LGA must belong together' });
+        }
+        location = { state: zone.state, lga: zone.lga, zoneId: zone.id };
+      }
       const user = await prisma.user.update({
         where: { id: req.user.id },
-        data: { name, phone, address, zoneId: zoneId ? Number(zoneId) : undefined, state, lga, avatarUrl, theme, fontFamily, fontSize: fontSize ? Number(fontSize) : undefined, reminderEmails },
+        data: { name, phone, address, ...location, theme, fontFamily, fontSize: fontSize ? Number(fontSize) : undefined, reminderEmails },
       });
       res.json({ user: safeUser(user) });
     } catch (err) {

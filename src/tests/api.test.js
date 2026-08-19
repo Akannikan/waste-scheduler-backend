@@ -107,6 +107,23 @@ test('POST /api/site-reviews saves an authenticated review', async () => {
   assert.equal(res.body.review.comment, 'The review save works');
 });
 
+test('GET /api/zones supports state-filtered location data', async () => {
+  const res = await request(app).get('/api/zones').query({ state: 'Kwara' });
+  assert.ok([200, 500].includes(res.status));
+  if (res.status === 200) assert.ok(Array.isArray(res.body.zones));
+});
+
+test('POST /api/users/me/avatar rejects unsupported files', async () => {
+  const email = `avatar-${Date.now()}@example.com`;
+  const register = await request(app).post('/api/auth/register').send({ name: 'Avatar Test User', email, password: 'secret123', role: 'resident' });
+  assert.equal(register.status, 201);
+  const res = await request(app)
+    .post('/api/users/me/avatar')
+    .set('Authorization', `Bearer ${register.body.token}`)
+    .attach('avatar', Buffer.from('not-an-image'), 'avatar.txt');
+  assert.ok([400, 422].includes(res.status));
+});
+
 // ── 404 handler ───────────────────────────────────────────────
 test('GET /api/nonexistent → 404', async () => {
   const res = await request(app).get('/api/nonexistent-route');

@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -163,6 +164,7 @@ app.use('/api', rateLimit({ windowMs: 15 * 60 * 1000, max: 200 }));
 // ── Body parsing ─────────────────────────────────────────────
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true, limit: '5mb' }));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(passport.initialize());
 
 // ── Routes ───────────────────────────────────────────────────

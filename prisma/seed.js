@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱  Seeding WasteScheduler Nigeria database...\n');
 
-  // ── Nigerian Zones (Lagos, Abuja, PH) ─────────────────────
+  // ── Nigerian Zones (Kwara first, with existing states preserved) ──
   const zones = await Promise.all([
     prisma.zone.upsert({ where: { code: 'LAG-IS' }, update: {}, create: { name: 'Lagos Island', code: 'LAG-IS', state: 'Lagos', lga: 'Lagos Island', description: 'Lagos Island LGA — Eko, Lafiaji, Olowogbowo' } }),
     prisma.zone.upsert({ where: { code: 'LAG-IK' }, update: {}, create: { name: 'Ikeja GRA', code: 'LAG-IK', state: 'Lagos', lga: 'Ikeja', description: 'Ikeja LGA — GRA, Allen Avenue, Alausa' } }),
@@ -18,6 +18,9 @@ async function main() {
     prisma.zone.upsert({ where: { code: 'ABJ-CBD' }, update: {}, create: { name: 'Abuja Central', code: 'ABJ-CBD', state: 'FCT', lga: 'Municipal Area Council', description: 'Abuja CBD — Maitama, Asokoro, Wuse' } }),
     prisma.zone.upsert({ where: { code: 'PH-PH' }, update: {}, create: { name: 'Port Harcourt City', code: 'PH-PH', state: 'Rivers', lga: 'Port Harcourt', description: 'PH City LGA — Old GRA, Trans Amadi, Diobu' } }),
     prisma.zone.upsert({ where: { code: 'KAN-MUN' }, update: {}, create: { name: 'Kano Municipal', code: 'KAN-MUN', state: 'Kano', lga: 'Kano Municipal', description: 'Kano Municipal LGA — Fagge, Gwale, Nassarawa' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ILW' }, update: { state: 'Kwara', lga: 'Ilorin West' }, create: { name: 'Ilorin West', code: 'KWR-ILW', state: 'Kwara', lga: 'Ilorin West', description: 'Ilorin West LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ILE' }, update: { state: 'Kwara', lga: 'Ilorin East' }, create: { name: 'Ilorin East', code: 'KWR-ILE', state: 'Kwara', lga: 'Ilorin East', description: 'Ilorin East LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-OFF' }, update: { state: 'Kwara', lga: 'Offa' }, create: { name: 'Offa', code: 'KWR-OFF', state: 'Kwara', lga: 'Offa', description: 'Offa LGA collection zone' } }),
   ]);
   console.log(`  ✓ ${zones.length} Nigerian zones created`);
 

@@ -42,6 +42,15 @@ router.post(
     try {
       const { name, email, password, role = 'resident', phone, address, state, lga, zoneId } = req.body;
 
+      let location = { state, lga, zoneId: zoneId ? Number(zoneId) : undefined };
+      if (location.zoneId) {
+        const zone = await prisma.zone.findUnique({ where: { id: location.zoneId } });
+        if (!zone || (state && zone.state !== state) || (lga && zone.lga !== lga)) {
+          return res.status(422).json({ message: 'State, zone, and LGA must belong together' });
+        }
+        location = { state: zone.state, lga: zone.lga, zoneId: zone.id };
+      }
+
       const existing = await prisma.user.findUnique({ where: { email } });
       if (existing) {
         return res.status(409).json({ message: 'An account with this email already exists' });
@@ -49,7 +58,7 @@ router.post(
 
       const passwordHash = await bcrypt.hash(password, 12);
       const user = await prisma.user.create({
-        data: { name, email, passwordHash, role, phone, address, state, lga, zoneId: zoneId ? Number(zoneId) : undefined },
+        data: { name, email, passwordHash, role, phone, address, ...location },
       });
 
       const token = signToken(user);

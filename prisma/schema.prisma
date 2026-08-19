@@ -372,6 +372,7 @@ model Notification {
   title     String              @db.VarChar(255)
   message   String
   channel   NotificationChannel @default(in_app)
+  reminderKey String?
   isRead    Boolean             @default(false)
   sentAt    DateTime?
   createdAt DateTime            @default(now())
@@ -381,6 +382,7 @@ model Notification {
   @@index([userId])
   @@index([isRead])
   @@index([createdAt])
+  @@index([userId, reminderKey])
   @@map("notifications")
 }
 

@@ -1,5 +1,5 @@
 const express = require('express');
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
@@ -7,9 +7,39 @@ const { validate } = require('../middleware/validate');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-router.get('/', async (req, res) => {
+router.get('/states', async (req, res) => {
   try {
-    const zones = await prisma.zone.findMany({ where: { isActive: true }, orderBy: { name: 'asc' } });
+    const states = await prisma.zone.findMany({
+      where: { isActive: true, state: { not: null } },
+      distinct: ['state'],
+      orderBy: { state: 'asc' },
+      select: { state: true },
+    });
+    res.json({ states: states.map(item => item.state) });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch states' });
+  }
+});
+
+router.get('/lgas', [query('state').trim().notEmpty()], validate, async (req, res) => {
+  try {
+    const zones = await prisma.zone.findMany({
+      where: { isActive: true, state: req.query.state },
+      distinct: ['lga'],
+      orderBy: { lga: 'asc' },
+      select: { lga: true },
+    });
+    res.json({ lgas: zones.map(item => item.lga).filter(Boolean) });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch LGAs' });
+  }
+});
+
+router.get('/', [query('state').optional().trim().isLength({ min: 2, max: 60 })], validate, async (req, res) => {
+  try {
+    const where = { isActive: true };
+    if (req.query.state) where.state = req.query.state;
+    const zones = await prisma.zone.findMany({ where, orderBy: { name: 'asc' } });
     res.json({ zones });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch zones' });

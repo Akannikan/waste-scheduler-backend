@@ -4,6 +4,10 @@ const { sendPickupReminderEmail, sendBillEmail } = require('./email.service');
 
 const prisma = new PrismaClient();
 
+async function reminderAlreadySent(userId, scheduleId, hoursAway) {
+  return prisma.notification.findFirst({ where: { userId, reminderKey: `${scheduleId}:${hoursAway}h` } });
+}
+
 function startCronJobs() {
   console.log('⏰  Cron jobs started');
 
@@ -51,6 +55,7 @@ function startCronJobs() {
 
         for (const user of users) {
           try {
+            if (await reminderAlreadySent(user.id, schedule.id, 24)) continue;
             await sendPickupReminderEmail(user, schedule, 24);
             // Also create in-app notification
             await prisma.notification.create({
@@ -59,6 +64,7 @@ function startCronJobs() {
                 title: `${schedule.category?.name || 'Waste'} pickup tomorrow`,
                 message: `Your ${schedule.category?.name || 'waste'} collection is scheduled for tomorrow. Please put out your ${schedule.category?.binColor || 'bin'}.`,
                 channel: 'email',
+                reminderKey: `${schedule.id}:24h`,
                 sentAt: new Date(),
               },
             });
@@ -82,6 +88,7 @@ function startCronJobs() {
 
         for (const user of users) {
           try {
+            if (await reminderAlreadySent(user.id, schedule.id, 2)) continue;
             await sendPickupReminderEmail(user, schedule, 2);
             await prisma.notification.create({
               data: {
@@ -89,6 +96,7 @@ function startCronJobs() {
                 title: `⚠️ ${schedule.category?.name || 'Waste'} pickup in 2 hours!`,
                 message: `Your ${schedule.category?.name || 'waste'} collection starts in about 2 hours. Make sure your bin is out!`,
                 channel: 'in_app',
+                reminderKey: `${schedule.id}:2h`,
                 sentAt: new Date(),
               },
             });
