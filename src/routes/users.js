@@ -125,7 +125,7 @@ router.put(
   authenticate,
   [
     body('name').optional().trim().isLength({ min: 1, max: 100 }),
-    body('phone').optional().isMobilePhone().withMessage('Invalid phone number'),
+    body('phone').optional({ checkFalsy: true }).isMobilePhone().withMessage('Invalid phone number'),
     body('address').optional().isString(),
     body('zoneId').optional().isInt(),
     body('state').optional().isString().isLength({ max: 60 }),
