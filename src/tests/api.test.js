@@ -91,6 +91,22 @@ test('POST /api/site-reviews requires auth → 401', async () => {
   assert.equal(res.status, 401);
 });
 
+test('POST /api/site-reviews saves an authenticated review', async () => {
+  const email = `review-${Date.now()}@example.com`;
+  const register = await request(app).post('/api/auth/register').send({
+    name: 'Review Test User', email, password: 'secret123', role: 'resident',
+  });
+  assert.equal(register.status, 201);
+
+  const res = await request(app)
+    .post('/api/site-reviews')
+    .set('Authorization', `Bearer ${register.body.token}`)
+    .send({ rating: 5, comment: 'The review save works' });
+
+  assert.equal(res.status, 201);
+  assert.equal(res.body.review.comment, 'The review save works');
+});
+
 // ── 404 handler ───────────────────────────────────────────────
 test('GET /api/nonexistent → 404', async () => {
   const res = await request(app).get('/api/nonexistent-route');

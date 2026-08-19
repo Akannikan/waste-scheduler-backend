@@ -51,12 +51,17 @@ router.post(
     try {
       const { rating, comment } = req.body;
 
-      const review = await prisma.siteReview.upsert({
-        where: { userId: req.user.id },
-        update: { rating, comment },
-        create: { userId: req.user.id, rating, comment },
-        include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
-      });
+      const existingReview = await prisma.siteReview.findFirst({ where: { userId: req.user.id } });
+      const review = existingReview
+        ? await prisma.siteReview.update({
+            where: { id: existingReview.id },
+            data: { rating: Number(rating), comment },
+            include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
+          })
+        : await prisma.siteReview.create({
+            data: { userId: req.user.id, rating: Number(rating), comment },
+            include: { user: { select: { id: true, name: true, avatarUrl: true, state: true, lga: true, zone: { select: { name: true } } } } },
+          });
 
       res.status(201).json({ review: formatReview(review) });
     } catch (err) {
