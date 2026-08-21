@@ -20,6 +20,19 @@ async function main() {
     prisma.zone.upsert({ where: { code: 'KWR-ILW' }, update: { state: 'Kwara', lga: 'Ilorin West' }, create: { name: 'Ilorin West', code: 'KWR-ILW', state: 'Kwara', lga: 'Ilorin West', description: 'Ilorin West LGA collection zone' } }),
     prisma.zone.upsert({ where: { code: 'KWR-ILE' }, update: { state: 'Kwara', lga: 'Ilorin East' }, create: { name: 'Ilorin East', code: 'KWR-ILE', state: 'Kwara', lga: 'Ilorin East', description: 'Ilorin East LGA collection zone' } }),
     prisma.zone.upsert({ where: { code: 'KWR-OFF' }, update: { state: 'Kwara', lga: 'Offa' }, create: { name: 'Offa', code: 'KWR-OFF', state: 'Kwara', lga: 'Offa', description: 'Offa LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ASA' }, update: { state: 'Kwara', lga: 'Asa' }, create: { name: 'Asa', code: 'KWR-ASA', state: 'Kwara', lga: 'Asa', description: 'Asa LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-BAR' }, update: { state: 'Kwara', lga: 'Baruten' }, create: { name: 'Baruten', code: 'KWR-BAR', state: 'Kwara', lga: 'Baruten', description: 'Baruten LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-EDU' }, update: { state: 'Kwara', lga: 'Edu' }, create: { name: 'Edu', code: 'KWR-EDU', state: 'Kwara', lga: 'Edu', description: 'Edu LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-IFA' }, update: { state: 'Kwara', lga: 'Ifelodun' }, create: { name: 'Ifelodun', code: 'KWR-IFA', state: 'Kwara', lga: 'Ifelodun', description: 'Ifelodun LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-IRE' }, update: { state: 'Kwara', lga: 'Irepodun' }, create: { name: 'Irepodun', code: 'KWR-IRE', state: 'Kwara', lga: 'Irepodun', description: 'Irepodun LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ISL' }, update: { state: 'Kwara', lga: 'Isin' }, create: { name: 'Isin', code: 'KWR-ISL', state: 'Kwara', lga: 'Isin', description: 'Isin LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-KAI' }, update: { state: 'Kwara', lga: 'Kaiama' }, create: { name: 'Kaiama', code: 'KWR-KAI', state: 'Kwara', lga: 'Kaiama', description: 'Kaiama LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-MOR' }, update: { state: 'Kwara', lga: 'Moro' }, create: { name: 'Moro', code: 'KWR-MOR', state: 'Kwara', lga: 'Moro', description: 'Moro LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-OYU' }, update: { state: 'Kwara', lga: 'Oyun' }, create: { name: 'Oyun', code: 'KWR-OYU', state: 'Kwara', lga: 'Oyun', description: 'Oyun LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-PAT' }, update: { state: 'Kwara', lga: 'Patigi' }, create: { name: 'Patigi', code: 'KWR-PAT', state: 'Kwara', lga: 'Patigi', description: 'Patigi LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ILS' }, update: { state: 'Kwara', lga: 'Ilorin South' }, create: { name: 'Ilorin South', code: 'KWR-ILS', state: 'Kwara', lga: 'Ilorin South', description: 'Ilorin South LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-OKE' }, update: { state: 'Kwara', lga: 'Oke Ero' }, create: { name: 'Oke Ero', code: 'KWR-OKE', state: 'Kwara', lga: 'Oke Ero', description: 'Oke Ero LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-EKI' }, update: { state: 'Kwara', lga: 'Ekiti' }, create: { name: 'Ekiti', code: 'KWR-EKI', state: 'Kwara', lga: 'Ekiti', description: 'Ekiti LGA collection zone' } }),
   ]);
   console.log(`  ✓ ${zones.length} Nigerian zones created`);
 
@@ -115,7 +128,7 @@ async function main() {
   console.log(`  ✓ ${guideItems.length} Nigerian waste guide items created`);
 
   // ── Quizzes ────────────────────────────────────────────────
-  const quiz1 = await prisma.quiz.create({
+  const quiz1 = await prisma.quiz.findFirst({ where: { title: 'Waste Sorting Basics' } }) || await prisma.quiz.create({
     data: {
       title: 'Waste Sorting Basics',
       description: 'Test your knowledge of proper waste sorting and recycling in Nigeria',
@@ -135,7 +148,7 @@ async function main() {
     },
   });
 
-  const quiz2 = await prisma.quiz.create({
+  const quiz2 = await prisma.quiz.findFirst({ where: { title: 'Nigerian Environment & Recycling' } }) || await prisma.quiz.create({
     data: {
       title: 'Nigerian Environment & Recycling',
       description: 'Advanced quiz on environmental impact and recycling in Nigeria',

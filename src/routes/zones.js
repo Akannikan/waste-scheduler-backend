@@ -64,12 +64,14 @@ router.post(
     body('name').trim().notEmpty().withMessage('Zone name is required'),
     body('code').trim().notEmpty().withMessage('Zone code is required'),
     body('description').optional().isString(),
+    body('state').optional().isString().isLength({ max: 60 }),
+    body('lga').optional().isString().isLength({ max: 100 }),
   ],
   validate,
   async (req, res) => {
     try {
-      const { name, code, description } = req.body;
-      const zone = await prisma.zone.create({ data: { name, code: code.toUpperCase(), description } });
+      const { name, code, description, state, lga } = req.body;
+      const zone = await prisma.zone.create({ data: { name, code: code.toUpperCase(), description, state, lga } });
       res.status(201).json({ zone });
     } catch (err) {
       if (err.code === 'P2002') return res.status(409).json({ message: 'Zone code already exists' });
@@ -81,8 +83,8 @@ router.post(
 router.put('/:id', authenticate, authorize(['admin']), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, code, description, isActive } = req.body;
-    const zone = await prisma.zone.update({ where: { id }, data: { name, code, description, isActive } });
+    const { name, code, description, state, lga, isActive } = req.body;
+    const zone = await prisma.zone.update({ where: { id }, data: { name, code, description, state, lga, isActive } });
     res.json({ zone });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ message: 'Zone not found' });
