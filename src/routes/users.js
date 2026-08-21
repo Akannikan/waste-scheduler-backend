@@ -5,18 +5,11 @@ const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
 const multer = require('multer');
-const fs = require('fs');
-const path = require('path');
 
 const router = express.Router();
 const prisma = new PrismaClient();
-const avatarDir = path.join(__dirname, '../../uploads/avatars');
-fs.mkdirSync(avatarDir, { recursive: true });
 const avatarUpload = multer({
-  storage: multer.diskStorage({
-    destination: avatarDir,
-    filename: (req, file, cb) => cb(null, `${req.user.id}-${Date.now()}${path.extname(file.originalname).toLowerCase()}`),
-  }),
+  storage: multer.memoryStorage(),
   limits: { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => cb(null, ['image/jpeg', 'image/png', 'image/webp'].includes(file.mimetype)),
 });
@@ -92,7 +85,7 @@ router.get('/me', authenticate, async (req, res) => {
 router.post('/me/avatar', authenticate, avatarUpload.single('avatar'), async (req, res) => {
   try {
     if (!req.file) return res.status(400).json({ message: 'Upload a JPG, PNG, or WebP image under 2 MB' });
-    const avatarUrl = `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`;
+    const avatarUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     const user = await prisma.user.update({ where: { id: req.user.id }, data: { avatarUrl } });
     res.json({ user: safeUser(user) });
   } catch (err) {
