@@ -133,12 +133,11 @@ router.put(
     body('theme').optional().isIn(['light', 'dark', 'forest', 'sunset']),
     body('fontFamily').optional().isIn(['Inter', 'Poppins', 'Playfair Display', 'Nunito']),
     body('fontSize').optional().isInt({ min: 14, max: 20 }),
-    body('reminderEmails').optional().isBoolean(),
   ],
   validate,
   async (req, res) => {
     try {
-      const { name, phone, address, zoneId, state, lga, theme, fontFamily, fontSize, reminderEmails } = req.body;
+      const { name, phone, address, zoneId, state, lga, theme, fontFamily, fontSize } = req.body;
       let location = { state, lga, zoneId: zoneId ? Number(zoneId) : undefined };
       if (location.zoneId) {
         const zone = await prisma.zone.findUnique({ where: { id: location.zoneId } });
@@ -149,7 +148,7 @@ router.put(
       }
       const user = await prisma.user.update({
         where: { id: req.user.id },
-        data: { name, phone, address, ...location, theme, fontFamily, fontSize: fontSize ? Number(fontSize) : undefined, reminderEmails },
+        data: { name, phone, address, ...location, theme, fontFamily, fontSize: fontSize ? Number(fontSize) : undefined },
       });
       res.json({ user: safeUser(user) });
     } catch (err) {
