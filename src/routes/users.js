@@ -193,14 +193,15 @@ router.put(
   validate,
   async (req, res) => {
     try {
-      const user = await prisma.user.update({
-        where: { id: req.user.id },
-        data: {
-          theme: req.body.theme,
-          fontFamily: req.body.fontFamily,
-          fontSize: Number(req.body.fontSize),
-        },
-      });
+      await prisma.$executeRaw`
+        UPDATE "users"
+        SET "theme" = ${req.body.theme},
+            "fontFamily" = ${req.body.fontFamily},
+            "fontSize" = ${Number(req.body.fontSize)},
+            "updatedAt" = NOW()
+        WHERE "id" = ${req.user.id}
+      `;
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       res.json({ user: safeUser(user) });
     } catch (err) {
       console.error('[PUT /users/me/preferences]', err);
