@@ -73,6 +73,39 @@ enum QuizDifficulty {
   hard
 }
 
+enum TransactionStatus {
+  pending
+  successful
+  failed
+  refunded
+}
+
+enum WithdrawalStatus {
+  pending
+  processing
+  successful
+  failed
+  cancelled
+}
+
+enum BillingPeriod {
+  monthly
+  yearly
+}
+
+enum SubscriptionStatus {
+  active
+  expired
+  cancelled
+  pending
+}
+
+enum RecyclerRole {
+  recycler
+  admin
+  customer
+}
+
 // ─── MODELS ──────────────────────────────────────────────────
 
 model User {
@@ -116,11 +149,232 @@ model User {
   assignmentMessages AssignmentMessage[] @relation("MessageSender")
   sentMessages       Message[]           @relation("SentMessages")
   receivedMessages   Message[]           @relation("ReceivedMessages")
+  bookings           Booking[]           @relation("CustomerBookings")
+  collectorBookings  Booking[]           @relation("CollectorBookings")
+  transactions       Transaction[]
+  collectorEarnings  CollectorEarning[]
+  withdrawals        Withdrawal[]
+  collectorSubscriptions CollectorSubscription[]
+  businessAccounts   BusinessAccount[]
+  recyclingPartners   RecyclingPartner[]
 
   @@index([email])
   @@index([role])
   @@index([zoneId])
   @@map("users")
+}
+
+model PlatformSetting {
+  id            Int      @id @default(autoincrement())
+  key           String   @unique @db.VarChar(100)
+  value         String   @db.VarChar(255)
+  type          String   @default("number") @db.VarChar(30)
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([key])
+  @@map("platform_settings")
+}
+
+model Booking {
+  id                 Int               @id @default(autoincrement())
+  bookingReference   String            @unique @db.VarChar(60)
+  customerId         Int
+  collectorId        Int?
+  serviceName        String            @db.VarChar(180)
+  collectionDate     DateTime?
+  collectionTime     String?
+  location           String?           @db.VarChar(255)
+  amount             Float             @default(0)
+  platformCommission Float             @default(0)
+  collectorEarnings  Float             @default(0)
+  totalAmount        Float             @default(0)
+  commissionRate     Float             @default(0)
+  paymentStatus      TransactionStatus @default(pending)
+  status             String            @default("pending") @db.VarChar(40)
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  customer    User           @relation("CustomerBookings", fields: [customerId], references: [id])
+  collector   User?          @relation("CollectorBookings", fields: [collectorId], references: [id])
+  transactions Transaction[]
+  earnings    CollectorEarning[]
+
+  @@index([customerId])
+  @@index([collectorId])
+  @@index([paymentStatus])
+  @@index([status])
+  @@map("bookings")
+}
+
+model Transaction {
+  id                 Int               @id @default(autoincrement())
+  bookingId          Int?
+  customerId         Int?
+  collectorId        Int?
+  amount             Float             @default(0)
+  commission         Float             @default(0)
+  collectorEarnings  Float             @default(0)
+  paymentProvider    String?           @db.VarChar(80)
+  paymentReference   String?           @db.VarChar(120)
+  status             TransactionStatus @default(pending)
+  notes              String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+  customer  User?    @relation(fields: [customerId], references: [id])
+  collector User?    @relation(fields: [collectorId], references: [id])
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([collectorId])
+  @@index([status])
+  @@index([paymentReference])
+  @@map("transactions")
+}
+
+model CollectorEarning {
+  id                 Int               @id @default(autoincrement())
+  collectorId        Int
+  customerId         Int?
+  bookingId          Int?
+  collectionAmount   Float             @default(0)
+  platformCommission Float             @default(0)
+  collectorEarnings  Float             @default(0)
+  paymentStatus      TransactionStatus @default(pending)
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  collector User?    @relation(fields: [collectorId], references: [id])
+  customer  User?    @relation(fields: [customerId], references: [id])
+  booking   Booking? @relation(fields: [bookingId], references: [id])
+
+  @@index([collectorId])
+  @@index([paymentStatus])
+  @@map("collector_earnings")
+}
+
+model Withdrawal {
+  id                Int             @id @default(autoincrement())
+  collectorId       Int
+  amount            Float           @default(0)
+  status            WithdrawalStatus @default(pending)
+  bankName          String?         @db.VarChar(80)
+  accountName       String?         @db.VarChar(100)
+  accountNumber     String?         @db.VarChar(30)
+  note              String?
+  reviewedBy        Int?
+  reviewedAt        DateTime?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  collector User @relation(fields: [collectorId], references: [id])
+
+  @@index([collectorId])
+  @@index([status])
+  @@map("withdrawals")
+}
+
+model SubscriptionPlan {
+  id            Int             @id @default(autoincrement())
+  name          String          @db.VarChar(80)
+  price         Float           @default(0)
+  billingPeriod BillingPeriod   @default(monthly)
+  features      String[]
+  maxBookings   Int?
+  status        String          @default("active") @db.VarChar(40)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  collectorSubscriptions CollectorSubscription[]
+
+  @@index([status])
+  @@map("subscription_plans")
+}
+
+model CollectorSubscription {
+  id          Int                 @id @default(autoincrement())
+  collectorId Int
+  planId      Int
+  status      SubscriptionStatus  @default(pending)
+  price       Float               @default(0)
+  billingPeriod BillingPeriod     @default(monthly)
+  startedAt   DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  collector User             @relation(fields: [collectorId], references: [id])
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([collectorId])
+  @@index([status])
+  @@map("collector_subscriptions")
+}
+
+model BusinessPlan {
+  id            Int           @id @default(autoincrement())
+  name          String        @db.VarChar(80)
+  price         Float         @default(0)
+  billingPeriod BillingPeriod @default(monthly)
+  features      String[]
+  status        String        @default("active") @db.VarChar(40)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  businessAccounts BusinessAccount[]
+
+  @@index([status])
+  @@map("business_plans")
+}
+
+model BusinessAccount {
+  id                    Int       @id @default(autoincrement())
+  userId                Int
+  organizationName      String    @db.VarChar(180)
+  contactPerson         String    @db.VarChar(120)
+  phone                 String    @db.VarChar(20)
+  email                 String    @db.VarChar(150)
+  address               String    @db.VarChar(255)
+  wasteType             String    @db.VarChar(80)
+  collectionFrequency   String    @db.VarChar(80)
+  collectionPoints      Int       @default(1)
+  preferredSchedule     String?   @db.VarChar(80)
+  estimatedMonthlyVolume Float     @default(0)
+  planId                Int?
+  status                String    @default("pending") @db.VarChar(40)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  user User         @relation(fields: [userId], references: [id])
+  plan BusinessPlan? @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([status])
+  @@map("business_accounts")
+}
+
+model RecyclingPartner {
+  id             Int          @id @default(autoincrement())
+  userId         Int?
+  name           String       @db.VarChar(180)
+  role           RecyclerRole @default(recycler)
+  phone          String?      @db.VarChar(20)
+  email          String?      @db.VarChar(150)
+  address        String?      @db.VarChar(255)
+  wasteCategories String[]
+  status         String       @default("pending") @db.VarChar(40)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([role])
+  @@index([status])
+  @@map("recycling_partners")
 }
 
 model Zone {

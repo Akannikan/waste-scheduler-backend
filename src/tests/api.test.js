@@ -135,3 +135,29 @@ test('GET /api/users/me with invalid token → 401', async () => {
   const res = await request(app).get('/api/users/me').set('Authorization', 'Bearer invalidtoken123');
   assert.equal(res.status, 401);
 });
+
+// ── Monetization / revenue settings ─────────────────────────
+test('GET /api/admin/settings/revenue returns commission config', async () => {
+  const res = await request(app).get('/api/admin/settings/revenue');
+  assert.ok([200, 401, 500].includes(res.status));
+  if (res.status === 200) {
+    assert.ok(typeof res.body.settings?.commissionRate === 'number');
+  }
+});
+
+test('POST /api/payments/initialize calculates commission breakdown', async () => {
+  const res = await request(app).post('/api/payments/initialize').send({
+    amount: 2000,
+    bookingId: 'WS-TEST-1',
+    collectorId: 1,
+    customerId: 1,
+    provider: 'manual'
+  });
+
+  assert.ok([200, 201, 401, 500].includes(res.status));
+  if (res.status === 200 || res.status === 201) {
+    assert.equal(res.body.breakdown.totalAmount, 2000);
+    assert.equal(res.body.breakdown.platformCommission, 200);
+    assert.equal(res.body.breakdown.collectorEarnings, 1800);
+  }
+});

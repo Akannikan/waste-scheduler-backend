@@ -27,8 +27,15 @@ const wasteLogRoutes = require('./src/routes/wasteLogs');
 const collectionRecordRoutes = require('./src/routes/collectionRecords');
 const assignmentRoutes = require('./src/routes/assignments');
 const messageRoutes = require('./src/routes/messages');
+const paymentRoutes = require('./src/routes/payments');
+const revenueRoutes = require('./src/routes/revenue');
+const collectorRoutes = require('./src/routes/collector');
+const subscriptionRoutes = require('./src/routes/subscriptions');
+const businessRoutes = require('./src/routes/business');
+const recyclingRoutes = require('./src/routes/recycling');
 const { startCronJobs } = require('./src/services/cron.service');
 const passport = require('./src/config/passport');
+const { ensurePlatformSettings } = require('./src/services/payment.service');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -187,6 +194,12 @@ app.use('/api/waste-logs', wasteLogRoutes);
 app.use('/api/collection-records', collectionRecordRoutes);
 app.use('/api/assignments', assignmentRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/admin', revenueRoutes);
+app.use('/api/collector', collectorRoutes);
+app.use('/api/subscriptions', subscriptionRoutes);
+app.use('/api/business', businessRoutes);
+app.use('/api/recycling', recyclingRoutes);
 
 // ── Health check ─────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
@@ -208,6 +221,7 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 if (require.main === module) {
   async function startServer() {
     await ensureQuizData();
+    await ensurePlatformSettings(prisma);
     app.listen(PORT, () => {
       console.log(`🚀  Waste Scheduler API running on port ${PORT}`);
       console.log(`   Health: http://localhost:${PORT}/api/health`);
