@@ -3,7 +3,7 @@ services:
   - type: web
     name: waste-scheduler-api
     env: node
-    buildCommand: npm ci && npm run db:generate && npm run db:push
+    buildCommand: npm ci && npm run db:generate
     startCommand: npm start
     envVars:
       - key: NODE_ENV

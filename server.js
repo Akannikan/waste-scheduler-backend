@@ -220,6 +220,14 @@ app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
 
 if (require.main === module) {
   async function startServer() {
+    try {
+      await prisma.$connect();
+      await prisma.$queryRaw`SELECT 1`;
+      console.log('[DATABASE] PostgreSQL connection established');
+    } catch (err) {
+      console.error('[DATABASE] Unable to connect to PostgreSQL. Check DATABASE_URL in Render:', err.message);
+      throw err;
+    }
     await ensureQuizData();
     await ensurePlatformSettings(prisma);
     app.listen(PORT, () => {
