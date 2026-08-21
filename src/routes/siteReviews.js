@@ -29,7 +29,7 @@ function formatReview(review) {
     createdAt: review.createdAt,
     user: {
       id: review.userId ?? null,
-      name: review.name || 'Community member',
+      name: review.name || null,
       avatarUrl: review.avatarUrl || null,
       state: review.state || null,
       lga: review.lga || null,
