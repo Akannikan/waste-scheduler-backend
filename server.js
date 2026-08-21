@@ -155,10 +155,15 @@ async function ensureQuizData() {
 app.use(helmet());
 
 // ── CORS ────────────────────────────────────────────────────
-const allowedOrigins = (process.env.CLIENT_URL || 'http://localhost:5173').split(',');
+const allowedOrigins = [
+  ...(process.env.CLIENT_URL || '').split(','),
+  'http://localhost:5173',
+  'https://waste-scheduler-frontend-alpha.vercel.app',
+].map((origin) => origin.trim().replace(/\/$/, '')).filter(Boolean);
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+    const normalizedOrigin = origin?.replace(/\/$/, '');
+    if (!normalizedOrigin || allowedOrigins.includes(normalizedOrigin)) return callback(null, true);
     callback(new Error('CORS policy violation'));
   },
   credentials: true,
