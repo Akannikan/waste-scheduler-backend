@@ -123,7 +123,8 @@ async function main() {
   ];
 
   for (const item of guideItems) {
-    await prisma.wasteGuideItem.create({ data: item });
+    const existing = await prisma.wasteGuideItem.findFirst({ where: { itemName: item.itemName } });
+    if (!existing) await prisma.wasteGuideItem.create({ data: item });
   }
   console.log(`  ✓ ${guideItems.length} Nigerian waste guide items created`);
 

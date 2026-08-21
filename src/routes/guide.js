@@ -30,7 +30,11 @@ router.get(
         take: 50,
       });
 
-      res.json({ items });
+      const uniqueItems = items.filter((item, index, allItems) => (
+        allItems.findIndex((candidate) => candidate.itemName.toLowerCase() === item.itemName.toLowerCase()) === index
+      ));
+
+      res.json({ items: uniqueItems });
     } catch (err) {
       res.status(500).json({ message: 'Failed to search waste guide' });
     }
