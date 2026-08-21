@@ -104,6 +104,9 @@ router.get('/:id', authenticate, async (req, res) => {
       },
     });
     if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
+    if (req.user.role === 'resident' && schedule.zoneId !== req.user.zoneId) {
+      return res.status(403).json({ message: 'You can only view schedules in your zone' });
+    }
     res.json({ schedule });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch schedule' });
@@ -210,7 +213,18 @@ router.delete('/:id', authenticate, authorize(['admin']), async (req, res) => {
 });
 
 // ── POST /api/schedules/:id/complete  (collector) ────────────
-router.post('/:id/complete', authenticate, authorize(['collector', 'admin']), async (req, res) => {
+router.post(
+  '/:id/complete',
+  authenticate,
+  authorize(['collector', 'admin']),
+  [
+    body('quantityKg').optional().isFloat({ min: 0 }).withMessage('Quantity must be a non-negative number'),
+    body('truckId').optional().isInt({ min: 1 }).withMessage('Invalid truck'),
+    body('proofImageUrl').optional().isURL().withMessage('Invalid proof image URL'),
+    body('notes').optional().isString(),
+  ],
+  validate,
+  async (req, res) => {
   try {
     const scheduleId = parseInt(req.params.id);
     const { quantityKg, notes, proofImageUrl, truckId } = req.body;
@@ -220,12 +234,19 @@ router.post('/:id/complete', authenticate, authorize(['collector', 'admin']), as
       return res.status(403).json({ message: 'You can only complete schedules assigned to you' });
     }
 
+    const collectorId = schedule.collectorId || (req.user.role === 'collector' ? req.user.id : null);
+    if (!collectorId) return res.status(422).json({ message: 'Assign a collector before completing this schedule' });
+
     const record = await prisma.$transaction(async (tx) => {
+      if (truckId) {
+        const truck = await tx.truck.findUnique({ where: { id: Number(truckId) } });
+        if (!truck) throw Object.assign(new Error('Truck not found'), { status: 422 });
+      }
       await tx.pickupSchedule.update({ where: { id: scheduleId }, data: { status: 'completed' } });
       return tx.collectionRecord.create({
         data: {
           scheduleId,
-          collectorId: req.user.id,
+          collectorId,
           quantityKg: quantityKg ? Number(quantityKg) : undefined,
           notes,
           proofImageUrl,
@@ -238,8 +259,10 @@ router.post('/:id/complete', authenticate, authorize(['collector', 'admin']), as
     res.status(201).json({ record });
   } catch (err) {
     if (err.code === 'P2002') return res.status(409).json({ message: 'Schedule already has a collection record' });
+    if (err.status) return res.status(err.status).json({ message: err.message });
     res.status(500).json({ message: 'Failed to record completion' });
   }
-});
+  }
+);
 
 module.exports = router;

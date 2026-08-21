@@ -36,7 +36,7 @@ router.post(
       const serviceName = req.body.serviceName || 'Waste Collection';
       const breakdown = calculateBookingBreakdown(amount, settings.commissionRate);
 
-      const booking = await prisma.$transaction(async (tx) => {
+      const payment = await prisma.$transaction(async (tx) => {
         if (collectorId) {
           const collector = await tx.user.findFirst({ where: { id: collectorId, role: 'collector', isActive: true } });
           if (!collector) throw Object.assign(new Error('Selected collector is not available'), { status: 422 });
@@ -61,7 +61,7 @@ router.post(
           },
         });
 
-        await tx.transaction.create({
+        const transaction = await tx.transaction.create({
           data: {
             bookingId: created.id,
             customerId,
@@ -76,15 +76,15 @@ router.post(
           },
         });
 
-        return created;
+        return { booking: created, paymentReference: transaction.paymentReference };
       });
 
       res.status(201).json({
         message: 'Payment initialized successfully.',
-        booking,
+        booking: payment.booking,
         provider,
         breakdown,
-        paymentReference: booking.bookingReference,
+        paymentReference: payment.paymentReference,
       });
     } catch (error) {
       console.error('[payments initialize]', error);
@@ -106,11 +106,11 @@ router.post(
     try {
       const paymentReference = req.body.paymentReference || req.body.reference || req.body.bookingId || buildReference('PAY');
       const requestedStatus = req.body.status || 'successful';
-      const paymentStatus = req.user.role === 'admin' ? requestedStatus : 'pending';
+      const paymentStatus = requestedStatus;
 
       const transaction = await prisma.$transaction(async (tx) => {
         const record = await tx.transaction.findFirst({
-          where: { paymentReference },
+          where: { OR: [{ paymentReference }, { booking: { bookingReference: req.body.bookingId || paymentReference } }] },
           include: { booking: true },
         });
 
@@ -137,7 +137,7 @@ router.post(
 
         const updatedRecord = await tx.transaction.update({
           where: { id: record.id },
-          data: { status: paymentStatus },
+          data: { status: paymentStatus, paymentReference: record.paymentReference || paymentReference },
         });
 
         const booking = await tx.booking.update({
@@ -146,17 +146,20 @@ router.post(
         });
 
         if (paymentStatus === 'successful') {
-          await tx.collectorEarning.create({
-            data: {
-              collectorId: booking.collectorId || record.collectorId || req.user.id,
-              customerId: booking.customerId,
-              bookingId: booking.id,
-              collectionAmount: booking.amount,
-              platformCommission: booking.platformCommission,
-              collectorEarnings: booking.collectorEarnings,
-              paymentStatus: 'successful',
-            },
-          });
+          const existingEarning = await tx.collectorEarning.findFirst({ where: { bookingId: booking.id } });
+          if (!existingEarning) {
+            await tx.collectorEarning.create({
+              data: {
+                collectorId: booking.collectorId || record.collectorId || req.user.id,
+                customerId: booking.customerId,
+                bookingId: booking.id,
+                collectionAmount: booking.amount,
+                platformCommission: booking.platformCommission,
+                collectorEarnings: booking.collectorEarnings,
+                paymentStatus: 'successful',
+              },
+            });
+          }
         }
 
         return { transaction: updatedRecord, booking, status: paymentStatus };

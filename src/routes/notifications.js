@@ -78,7 +78,8 @@ router.patch('/:id/read', authenticate, async (req, res) => {
 router.patch('/read-all', authenticate, async (req, res) => {
   try {
     await prisma.notification.updateMany({
-      where: { OR: [{ userId: req.user.id }, { userId: null }], isRead: false },
+      // Broadcast rows are shared; changing their read flag would affect every user.
+      where: { userId: req.user.id, isRead: false },
       data: { isRead: true },
     });
     res.json({ message: 'All notifications marked as read' });

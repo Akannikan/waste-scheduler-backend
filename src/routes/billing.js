@@ -167,6 +167,15 @@ router.post(
     try {
       const { billId, amountNaira, bankName, accountName, transferRef, proofImageUrl, notes } = req.body;
 
+      if (billId) {
+        const bill = await prisma.bill.findFirst({ where: { id: Number(billId), userId: req.user.id } });
+        if (!bill) return res.status(404).json({ message: 'Bill not found' });
+        if (bill.status === 'paid') return res.status(409).json({ message: 'Bill has already been paid' });
+        if (Number(amountNaira) > Number(bill.amountNaira)) {
+          return res.status(422).json({ message: 'Payment cannot exceed the bill amount' });
+        }
+      }
+
       const payment = await prisma.payment.create({
         data: {
           userId: req.user.id,
