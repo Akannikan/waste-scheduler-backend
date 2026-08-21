@@ -3,9 +3,22 @@ const { body, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
+const nigeriaLocations = require('nigerian-states-and-lgas');
 
 const router = express.Router();
 const prisma = new PrismaClient();
+
+const NIGERIAN_STATES = [...new Set([...nigeriaLocations.states(), 'FCT'])].map((state) => (
+  state === 'Kastina' ? 'Katsina' : state
+));
+
+function catalogLgas(state) {
+  if (state === 'FCT') return ['Municipal Area Council'];
+  const match = nigeriaLocations.all().find((entry) => (
+    (entry.state === 'Kastina' ? 'Katsina' : entry.state) === state
+  ));
+  return match?.lgas || [];
+}
 
 router.get('/states', async (req, res) => {
   try {
@@ -15,7 +28,7 @@ router.get('/states', async (req, res) => {
       orderBy: { state: 'asc' },
       select: { state: true },
     });
-    res.json({ states: states.map(item => item.state) });
+    res.json({ states: [...new Set([...NIGERIAN_STATES, ...states.map(item => item.state).filter(Boolean)])].sort() });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch states' });
   }
@@ -29,7 +42,7 @@ router.get('/lgas', [query('state').trim().notEmpty()], validate, async (req, re
       orderBy: { lga: 'asc' },
       select: { lga: true },
     });
-    res.json({ lgas: zones.map(item => item.lga).filter(Boolean) });
+    res.json({ lgas: [...new Set([...catalogLgas(req.query.state), ...zones.map(item => item.lga).filter(Boolean)])].sort() });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch LGAs' });
   }

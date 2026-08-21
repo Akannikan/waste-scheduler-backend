@@ -3,6 +3,7 @@
 //  Run: node prisma/seed.js
 // ─────────────────────────────────────────────────────────────
 const { PrismaClient } = require('@prisma/client');
+const nigeriaLocations = require('nigerian-states-and-lgas');
 
 const prisma = new PrismaClient();
 
@@ -35,6 +36,7 @@ async function main() {
     prisma.zone.upsert({ where: { code: 'KWR-EKI' }, update: { state: 'Kwara', lga: 'Ekiti' }, create: { name: 'Ekiti', code: 'KWR-EKI', state: 'Kwara', lga: 'Ekiti', description: 'Ekiti LGA collection zone' } }),
   ]);
   console.log(`  ✓ ${zones.length} Nigerian zones created`);
+
 
   // ── Waste Categories ───────────────────────────────────────
   const categories = await Promise.all([
