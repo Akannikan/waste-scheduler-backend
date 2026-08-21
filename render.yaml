@@ -4,7 +4,9 @@ services:
     name: waste-scheduler-api
     env: node
     buildCommand: npm ci && npm run db:generate
+    preDeployCommand: npm run db:deploy
     startCommand: npm start
+    healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
         value: production

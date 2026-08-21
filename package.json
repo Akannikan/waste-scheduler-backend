@@ -11,6 +11,7 @@
     "dev": "nodemon server.js",
     "test": "node --test src/tests/api.test.js",
     "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
     "db:create-admin": "node scripts/create-admin.js",
