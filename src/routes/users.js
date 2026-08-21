@@ -151,16 +151,22 @@ router.put(
       if (hasZoneId) {
         const selectedZoneId = Number(zoneId);
         const zone = await prisma.zone.findUnique({ where: { id: selectedZoneId } });
-        if (!zone || (state && zone.state !== state) || (lga && zone.lga !== lga)) {
+        if (!zone) {
+          return res.status(422).json({ message: 'Selected collection zone was not found. Please choose a valid zone.' });
+        }
+        if ((state && zone.state !== state) || (lga && zone.lga !== lga)) {
           return res.status(422).json({ message: 'State, zone, and LGA must belong together' });
         }
         data.state = zone.state;
         data.lga = zone.lga;
         data.zoneId = zone.id;
       } else if (hasLocationFields) {
-        if (state !== undefined) data.state = state || null;
-        if (lga !== undefined) data.lga = lga || null;
-        if (zoneId === '' || zoneId === null) data.zoneId = null;
+        data.state = state || null;
+        data.lga = lga || null;
+        data.zoneId = null;
+      }
+      if (Object.keys(data).length === 0) {
+        return res.status(400).json({ message: 'No profile changes were provided' });
       }
       const user = await prisma.user.update({
         where: { id: req.user.id },
@@ -169,7 +175,8 @@ router.put(
       res.json({ user: safeUser(user) });
     } catch (err) {
       console.error('[PUT /users/me]', err);
-      res.status(500).json({ message: 'Failed to update profile' });
+      if (err.code === 'P2025') return res.status(404).json({ message: 'User account was not found' });
+      res.status(500).json({ message: `Failed to update profile: ${err.message}` });
     }
   }
 );
