@@ -138,20 +138,37 @@ router.put(
   async (req, res) => {
     try {
       const { name, phone, address, zoneId, state, lga, theme, fontFamily, fontSize } = req.body;
-      let location = { state, lga, zoneId: zoneId ? Number(zoneId) : undefined };
-      if (location.zoneId) {
-        const zone = await prisma.zone.findUnique({ where: { id: location.zoneId } });
+      const data = {};
+      if (name !== undefined) data.name = name;
+      if (phone !== undefined) data.phone = phone || null;
+      if (address !== undefined) data.address = address;
+      if (theme !== undefined) data.theme = theme;
+      if (fontFamily !== undefined) data.fontFamily = fontFamily;
+      if (fontSize !== undefined) data.fontSize = Number(fontSize);
+
+      const hasZoneId = zoneId !== undefined && zoneId !== null && zoneId !== '';
+      const hasLocationFields = state !== undefined || lga !== undefined || zoneId !== undefined;
+      if (hasZoneId) {
+        const selectedZoneId = Number(zoneId);
+        const zone = await prisma.zone.findUnique({ where: { id: selectedZoneId } });
         if (!zone || (state && zone.state !== state) || (lga && zone.lga !== lga)) {
           return res.status(422).json({ message: 'State, zone, and LGA must belong together' });
         }
-        location = { state: zone.state, lga: zone.lga, zoneId: zone.id };
+        data.state = zone.state;
+        data.lga = zone.lga;
+        data.zoneId = zone.id;
+      } else if (hasLocationFields) {
+        if (state !== undefined) data.state = state || null;
+        if (lga !== undefined) data.lga = lga || null;
+        if (zoneId === '' || zoneId === null) data.zoneId = null;
       }
       const user = await prisma.user.update({
         where: { id: req.user.id },
-        data: { name, phone, address, ...location, theme, fontFamily, fontSize: fontSize ? Number(fontSize) : undefined },
+        data,
       });
       res.json({ user: safeUser(user) });
     } catch (err) {
+      console.error('[PUT /users/me]', err);
       res.status(500).json({ message: 'Failed to update profile' });
     }
   }
