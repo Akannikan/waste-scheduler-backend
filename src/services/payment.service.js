@@ -10,10 +10,7 @@ function roundMoney(value) {
 }
 
 async function getPlatformSettings(prisma) {
-  if (!prisma.platformSetting) {
-    throw new Error('Prisma client is missing PlatformSetting. Regenerate Prisma from the current schema.');
-  }
-  const settings = await prisma.platformSetting.findMany({});
+  const settings = await prisma.$queryRaw`SELECT "key", "value" FROM "platform_settings"`;
   const map = Object.fromEntries((settings || []).map((s) => [s.key, s.value]));
 
   return {
@@ -25,9 +22,6 @@ async function getPlatformSettings(prisma) {
 }
 
 async function ensurePlatformSettings(prisma) {
-  if (!prisma.platformSetting) {
-    throw new Error('Prisma client is missing PlatformSetting. Regenerate Prisma from the current schema.');
-  }
   const defaults = [
     { key: 'commissionRate', value: String(DEFAULT_SETTINGS.commissionRate), type: 'number', description: 'Platform commission percentage applied to successful bookings.' },
     { key: 'minimumWithdrawalAmount', value: String(DEFAULT_SETTINGS.minimumWithdrawalAmount), type: 'number', description: 'Minimum withdrawal amount in NGN.' },
@@ -36,13 +30,21 @@ async function ensurePlatformSettings(prisma) {
   ];
 
   for (const item of defaults) {
-    await prisma.platformSetting.upsert({
-      where: { key: item.key },
-      update: { value: item.value, type: item.type, description: item.description },
-      create: item,
-    });
+    await upsertPlatformSetting(prisma, item.key, item.value, item.type, item.description);
   }
   return getPlatformSettings(prisma);
+}
+
+async function upsertPlatformSetting(prisma, key, value, type = 'number', description = null) {
+  await prisma.$executeRaw`
+    INSERT INTO "platform_settings" ("key", "value", "type", "description", "createdAt", "updatedAt")
+    VALUES (${key}, ${String(value)}, ${type}, ${description}, NOW(), NOW())
+    ON CONFLICT ("key") DO UPDATE SET
+      "value" = EXCLUDED."value",
+      "type" = EXCLUDED."type",
+      "description" = EXCLUDED."description",
+      "updatedAt" = NOW()
+  `;
 }
 
 function calculateBookingBreakdown(amount, commissionRate) {
@@ -67,6 +69,7 @@ module.exports = {
   DEFAULT_SETTINGS,
   ensurePlatformSettings,
   getPlatformSettings,
+  upsertPlatformSetting,
   calculateBookingBreakdown,
   roundMoney,
 };

@@ -3,7 +3,7 @@ const { body, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
-const { ensurePlatformSettings, getPlatformSettings } = require('../services/payment.service');
+const { ensurePlatformSettings, getPlatformSettings, upsertPlatformSetting } = require('../services/payment.service');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -142,11 +142,7 @@ router.put('/settings', authenticate, authorize(['admin']), [
     ].filter(([, value]) => value !== undefined && value !== null);
 
     for (const [key, value] of entries) {
-      await prisma.platformSetting.upsert({
-        where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value), type: typeof value === 'number' ? 'number' : 'string' },
-      });
+      await upsertPlatformSetting(prisma, key, value, typeof value === 'number' ? 'number' : 'string');
     }
 
     const settings = await getPlatformSettings(prisma);
@@ -173,11 +169,7 @@ router.put('/settings/revenue', authenticate, authorize(['admin']), [
     ].filter(([, value]) => value !== undefined && value !== null);
 
     for (const [key, value] of entries) {
-      await prisma.platformSetting.upsert({
-        where: { key },
-        update: { value: String(value) },
-        create: { key, value: String(value), type: typeof value === 'number' ? 'number' : 'string' },
-      });
+      await upsertPlatformSetting(prisma, key, value, typeof value === 'number' ? 'number' : 'string');
     }
 
     const settings = await getPlatformSettings(prisma);
