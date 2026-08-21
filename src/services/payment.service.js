@@ -10,6 +10,9 @@ function roundMoney(value) {
 }
 
 async function getPlatformSettings(prisma) {
+  if (!prisma.platformSetting) {
+    throw new Error('Prisma client is missing PlatformSetting. Regenerate Prisma from the current schema.');
+  }
   const settings = await prisma.platformSetting.findMany({});
   const map = Object.fromEntries((settings || []).map((s) => [s.key, s.value]));
 
@@ -22,6 +25,9 @@ async function getPlatformSettings(prisma) {
 }
 
 async function ensurePlatformSettings(prisma) {
+  if (!prisma.platformSetting) {
+    throw new Error('Prisma client is missing PlatformSetting. Regenerate Prisma from the current schema.');
+  }
   const defaults = [
     { key: 'commissionRate', value: String(DEFAULT_SETTINGS.commissionRate), type: 'number', description: 'Platform commission percentage applied to successful bookings.' },
     { key: 'minimumWithdrawalAmount', value: String(DEFAULT_SETTINGS.minimumWithdrawalAmount), type: 'number', description: 'Minimum withdrawal amount in NGN.' },

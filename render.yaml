@@ -3,7 +3,7 @@ services:
   - type: web
     name: waste-scheduler-api
     env: node
-    buildCommand: npm ci && npm run db:generate
+    buildCommand: npm ci && npm run db:generate && node -e "const { PrismaClient } = require('@prisma/client'); if (!new PrismaClient().platformSetting) throw new Error('Generated Prisma client is missing PlatformSetting. Check Render Root Directory and deploy commit.');"
     startCommand: npm start
     envVars:
       - key: NODE_ENV
