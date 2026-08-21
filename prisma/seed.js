@@ -3,7 +3,6 @@
 //  Run: node prisma/seed.js
 // ─────────────────────────────────────────────────────────────
 const { PrismaClient } = require('@prisma/client');
-const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
@@ -54,30 +53,6 @@ async function main() {
     prisma.truck.upsert({ where: { plateNumber: 'ABJ-001-WST' }, update: {}, create: { plateNumber: 'ABJ-001-WST', model: 'DAF CF 85', capacity: 10000 } }),
   ]);
   console.log('  ✓ 3 trucks created');
-
-  // ── Users ─────────────────────────────────────────────────
-  const adminHash = await bcrypt.hash('Admin@123', 10);
-  const collectorHash = await bcrypt.hash('Collector@123', 10);
-  const residentHash = await bcrypt.hash('Resident@123', 10);
-
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@wastescheduler.ng' },
-    update: {},
-    create: { name: 'System Administrator', email: 'admin@wastescheduler.ng', passwordHash: adminHash, role: 'admin', phone: '+2348012345678', state: 'Lagos', lga: 'Ikeja', emailVerified: true },
-  });
-
-  const collectorUser = await prisma.user.upsert({
-    where: { email: 'collector@wastescheduler.ng' },
-    update: {},
-    create: { name: 'Emeka Okafor', email: 'collector@wastescheduler.ng', passwordHash: collectorHash, role: 'collector', phone: '+2348023456789', state: 'Lagos', lga: 'Lagos Island', zoneId: zones[0].id, emailVerified: true },
-  });
-
-  const residentUser = await prisma.user.upsert({
-    where: { email: 'resident@wastescheduler.ng' },
-    update: {},
-    create: { name: 'Ngozi Adeyemi', email: 'resident@wastescheduler.ng', passwordHash: residentHash, role: 'resident', phone: '+2348034567890', address: '14 Broad Street, Lagos Island', state: 'Lagos', lga: 'Lagos Island', zoneId: zones[0].id, emailVerified: true },
-  });
-  console.log('  ✓ 3 seed users created');
 
   // ── Pickup Schedules ──────────────────────────────────────
   const nextDay = (offset, hour = 8) => {
@@ -181,26 +156,7 @@ async function main() {
   });
   console.log(`  ✓ 2 quizzes created (${quiz1.title}, ${quiz2.title})`);
 
-  // ── Demo Bill ──────────────────────────────────────────────
-  const now = new Date();
-  await prisma.bill.create({
-    data: {
-      userId: residentUser.id,
-      month: now.getMonth() + 1,
-      year: now.getFullYear(),
-      billingType: 'monthly_flat',
-      amountNaira: 2000,
-      dueDate: new Date(now.getFullYear(), now.getMonth(), 28),
-      status: 'pending',
-    },
-  });
-  console.log('  ✓ Demo bill created (₦2,000)');
-
   console.log('\n✅  Database seeded successfully!\n');
-  console.log('📋  Demo Credentials:');
-  console.log('   Admin:     admin@wastescheduler.ng     / Admin@123');
-  console.log('   Collector: collector@wastescheduler.ng / Collector@123');
-  console.log('   Resident:  resident@wastescheduler.ng  / Resident@123\n');
   console.log('💰  Pricing: ₦2,000/month flat rate (Lagos Island: ₦2,500, Ikeja GRA: ₦3,000)\n');
 }
 
