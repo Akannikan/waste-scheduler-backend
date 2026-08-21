@@ -45,7 +45,7 @@ router.get(
 // ── GET /api/announcements/:id ───────────────────────────────
 router.get('/:id', async (req, res) => {
   try {
-    const announcement = await prisma.announcement.findUnique({ where: { id: parseInt(req.params.id) } });
+    const announcement = await prisma.announcement.findFirst({ where: { id: parseInt(req.params.id), isActive: true } });
     if (!announcement) return res.status(404).json({ message: 'Announcement not found' });
     res.json({ announcement });
   } catch (err) {

@@ -7,20 +7,6 @@ const { validate } = require('../middleware/validate');
 const router = express.Router();
 const prisma = new PrismaClient();
 
-async function ensureReviewTable() {
-  await prisma.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS "site_reviews" (
-      "id" SERIAL PRIMARY KEY,
-      "userId" INTEGER NOT NULL UNIQUE,
-      "rating" INTEGER NOT NULL DEFAULT 5,
-      "comment" TEXT NOT NULL,
-      "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      CONSTRAINT "site_reviews_userId_fkey" FOREIGN KEY ("userId") REFERENCES "users"("id") ON DELETE CASCADE ON UPDATE CASCADE
-    )
-  `);
-}
-
 function formatReview(review) {
   return {
     id: Number(review.id),
@@ -28,28 +14,22 @@ function formatReview(review) {
     comment: review.comment,
     createdAt: review.createdAt,
     user: {
-      id: review.userId ?? null,
-      name: review.name || null,
-      avatarUrl: review.avatarUrl || null,
-      state: review.state || null,
-      lga: review.lga || null,
-      zone: review.zone || null,
+      id: review.user?.id ?? null,
+      name: review.user?.name || null,
+      avatarUrl: review.user?.avatarUrl || null,
+      state: review.user?.state || null,
+      lga: review.user?.lga || null,
+      zone: review.user?.zone?.name || null,
     },
   };
 }
 
 router.get('/', async (req, res) => {
   try {
-    await ensureReviewTable();
-    const reviews = await prisma.$queryRawUnsafe(`
-      SELECT sr."id", sr."userId", sr."rating", sr."comment", sr."createdAt",
-             u."name", u."avatarUrl", u."state", u."lga", z."name" AS "zone"
-      FROM "site_reviews" sr
-      JOIN "users" u ON u."id" = sr."userId"
-      LEFT JOIN "zones" z ON z."id" = u."zoneId"
-      ORDER BY sr."createdAt" DESC
-    `);
-
+    const reviews = await prisma.siteReview.findMany({
+      include: { user: { include: { zone: true } } },
+      orderBy: { createdAt: 'desc' },
+    });
     res.json({ reviews: reviews.map(formatReview) });
   } catch (err) {
     console.error('[site reviews read]', err);
@@ -68,26 +48,12 @@ router.post(
   async (req, res) => {
     try {
       const { rating, comment } = req.body;
-      await ensureReviewTable();
-
-      const reviews = await prisma.$queryRawUnsafe(`
-        INSERT INTO "site_reviews" ("userId", "rating", "comment", "createdAt", "updatedAt")
-        VALUES ($1, $2, $3, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-        ON CONFLICT ("userId") DO UPDATE SET
-          "rating" = EXCLUDED."rating",
-          "comment" = EXCLUDED."comment",
-          "updatedAt" = CURRENT_TIMESTAMP
-        RETURNING "id", "userId", "rating", "comment", "createdAt"
-      `, req.user.id, Number(rating), comment);
-      const savedReview = await prisma.$queryRawUnsafe(`
-        SELECT sr."id", sr."userId", sr."rating", sr."comment", sr."createdAt",
-               u."name", u."avatarUrl", u."state", u."lga", z."name" AS "zone"
-        FROM "site_reviews" sr
-        JOIN "users" u ON u."id" = sr."userId"
-        LEFT JOIN "zones" z ON z."id" = u."zoneId"
-        WHERE sr."id" = $1
-      `, reviews[0].id);
-      const review = savedReview[0];
+      const review = await prisma.siteReview.upsert({
+        where: { userId: req.user.id },
+        update: { rating: Number(rating), comment },
+        create: { userId: req.user.id, rating: Number(rating), comment },
+        include: { user: { include: { zone: true } } },
+      });
 
       res.status(201).json({ review: formatReview(review) });
     } catch (err) {

@@ -8,12 +8,10 @@ const { validate } = require('../middleware/validate');
 const { authenticate } = require('../middleware/auth');
 const { sendWelcomeEmail, sendPasswordResetEmail } = require('../services/email.service');
 const passport = require('../config/passport');
+const { JWT_SECRET, JWT_EXPIRES_IN } = require('../config/auth');
 
 const router = express.Router();
 const prisma = new PrismaClient();
-
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret';
-const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
 function signToken(user) {
   return jwt.sign(
@@ -40,7 +38,8 @@ router.post(
   validate,
   async (req, res) => {
     try {
-      const { name, email, password, role = 'resident', phone, address, state, lga, zoneId } = req.body;
+      const { name, email, password, phone, address, state, lga, zoneId } = req.body;
+      const role = 'resident';
 
       let location = { state, lga, zoneId: zoneId ? Number(zoneId) : undefined };
       if (location.zoneId) {

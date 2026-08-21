@@ -29,7 +29,7 @@ router.post(
       await ensurePlatformSettings(prisma);
       const settings = await getPlatformSettings(prisma);
       const amount = Number(req.body.amount);
-      const customerId = Number(req.body.customerId || req.user.id);
+      const customerId = req.user.id;
       const collectorId = req.body.collectorId ? Number(req.body.collectorId) : null;
       const provider = req.body.provider || 'manual';
       const bookingId = req.body.bookingId || buildReference('BOOK');
@@ -37,6 +37,10 @@ router.post(
       const breakdown = calculateBookingBreakdown(amount, settings.commissionRate);
 
       const booking = await prisma.$transaction(async (tx) => {
+        if (collectorId) {
+          const collector = await tx.user.findFirst({ where: { id: collectorId, role: 'collector', isActive: true } });
+          if (!collector) throw Object.assign(new Error('Selected collector is not available'), { status: 422 });
+        }
         const created = await tx.booking.create({
           data: {
             bookingReference: bookingId,
@@ -101,7 +105,8 @@ router.post(
   async (req, res) => {
     try {
       const paymentReference = req.body.paymentReference || req.body.reference || req.body.bookingId || buildReference('PAY');
-      const paymentStatus = req.body.status || 'successful';
+      const requestedStatus = req.body.status || 'successful';
+      const paymentStatus = req.user.role === 'admin' ? requestedStatus : 'pending';
 
       const transaction = await prisma.$transaction(async (tx) => {
         const record = await tx.transaction.findFirst({
@@ -114,6 +119,9 @@ router.post(
           if (!booking) {
             throw Object.assign(new Error('Transaction not found'), { status: 404 });
           }
+          if (req.user.role !== 'admin' && booking.customerId !== req.user.id) {
+            throw Object.assign(new Error('You can only update your own payment'), { status: 403 });
+          }
 
           const updatedBooking = await tx.booking.update({
             where: { id: booking.id },
@@ -121,6 +129,10 @@ router.post(
           });
 
           return { booking: updatedBooking, status: paymentStatus };
+        }
+
+        if (req.user.role !== 'admin' && record.booking?.customerId !== req.user.id) {
+          throw Object.assign(new Error('You can only update your own payment'), { status: 403 });
         }
 
         const updatedRecord = await tx.transaction.update({

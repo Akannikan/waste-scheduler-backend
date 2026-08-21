@@ -151,12 +151,15 @@ model User {
   receivedMessages   Message[]           @relation("ReceivedMessages")
   bookings           Booking[]           @relation("CustomerBookings")
   collectorBookings  Booking[]           @relation("CollectorBookings")
-  transactions       Transaction[]
-  collectorEarnings  CollectorEarning[]
   withdrawals        Withdrawal[]
   collectorSubscriptions CollectorSubscription[]
   businessAccounts   BusinessAccount[]
   recyclingPartners   RecyclingPartner[]
+  leaderboard         Leaderboard?
+  customerTransactions Transaction[]      @relation("CustomerTransactions")
+  collectorTransactions Transaction[]     @relation("CollectorTransactions")
+  customerEarnings    CollectorEarning[]  @relation("CustomerEarnings")
+  collectorEarnings   CollectorEarning[]  @relation("CollectorEarnings")
 
   @@index([email])
   @@index([role])
@@ -225,8 +228,8 @@ model Transaction {
   updatedAt          DateTime          @updatedAt
 
   booking   Booking? @relation(fields: [bookingId], references: [id])
-  customer  User?    @relation(fields: [customerId], references: [id])
-  collector User?    @relation(fields: [collectorId], references: [id])
+  customer  User?    @relation("CustomerTransactions", fields: [customerId], references: [id])
+  collector User?    @relation("CollectorTransactions", fields: [collectorId], references: [id])
 
   @@index([bookingId])
   @@index([customerId])
@@ -248,8 +251,8 @@ model CollectorEarning {
   createdAt          DateTime          @default(now())
   updatedAt          DateTime          @updatedAt
 
-  collector User?    @relation(fields: [collectorId], references: [id])
-  customer  User?    @relation(fields: [customerId], references: [id])
+  collector User?    @relation("CollectorEarnings", fields: [collectorId], references: [id])
+  customer  User?    @relation("CustomerEarnings", fields: [customerId], references: [id])
   booking   Booking? @relation(fields: [bookingId], references: [id])
 
   @@index([collectorId])
@@ -731,6 +734,8 @@ model Leaderboard {
   rank      Int?
   badges    String[]
   updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
 
   @@index([points])
   @@map("leaderboard")

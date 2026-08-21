@@ -169,6 +169,11 @@ router.put(
     try {
       const id = parseInt(req.params.id);
       const { title, pickupDate, status, notes, truckId, collectorId } = req.body;
+      const existing = await prisma.pickupSchedule.findUnique({ where: { id } });
+      if (!existing) return res.status(404).json({ message: 'Schedule not found' });
+      if (req.user.role === 'collector' && existing.collectorId !== req.user.id) {
+        return res.status(403).json({ message: 'You can only update schedules assigned to you' });
+      }
 
       const schedule = await prisma.pickupSchedule.update({
         where: { id },
@@ -177,8 +182,8 @@ router.put(
           pickupDate: pickupDate ? new Date(pickupDate) : undefined,
           status,
           notes,
-          truckId: truckId ? Number(truckId) : undefined,
-          collectorId: collectorId ? Number(collectorId) : undefined,
+          truckId: req.user.role === 'admin' && truckId ? Number(truckId) : undefined,
+          collectorId: req.user.role === 'admin' && collectorId ? Number(collectorId) : undefined,
         },
         include: {
           zone: { select: { id: true, name: true, code: true } },
@@ -209,21 +214,25 @@ router.post('/:id/complete', authenticate, authorize(['collector', 'admin']), as
   try {
     const scheduleId = parseInt(req.params.id);
     const { quantityKg, notes, proofImageUrl, truckId } = req.body;
+    const schedule = await prisma.pickupSchedule.findUnique({ where: { id: scheduleId } });
+    if (!schedule) return res.status(404).json({ message: 'Schedule not found' });
+    if (req.user.role === 'collector' && schedule.collectorId !== req.user.id) {
+      return res.status(403).json({ message: 'You can only complete schedules assigned to you' });
+    }
 
-    // Mark schedule as completed
-    await prisma.pickupSchedule.update({ where: { id: scheduleId }, data: { status: 'completed' } });
-
-    // Create collection record
-    const record = await prisma.collectionRecord.create({
-      data: {
-        scheduleId,
-        collectorId: req.user.id,
-        quantityKg: quantityKg ? Number(quantityKg) : undefined,
-        notes,
-        proofImageUrl,
-        truckId: truckId ? Number(truckId) : undefined,
-        completedAt: new Date(),
-      },
+    const record = await prisma.$transaction(async (tx) => {
+      await tx.pickupSchedule.update({ where: { id: scheduleId }, data: { status: 'completed' } });
+      return tx.collectionRecord.create({
+        data: {
+          scheduleId,
+          collectorId: req.user.id,
+          quantityKg: quantityKg ? Number(quantityKg) : undefined,
+          notes,
+          proofImageUrl,
+          truckId: truckId ? Number(truckId) : undefined,
+          completedAt: new Date(),
+        },
+      });
     });
 
     res.status(201).json({ record });
