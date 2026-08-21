@@ -26,11 +26,16 @@ function formatReview(review) {
 
 router.get('/', async (req, res) => {
   try {
-    const reviews = await prisma.siteReview.findMany({
-      include: { user: { include: { zone: true } } },
-      orderBy: { createdAt: 'desc' },
-    });
-    res.json({ reviews: reviews.map(formatReview) });
+    const reviews = await prisma.$queryRaw`
+      SELECT r."id", r."rating", r."comment", r."createdAt",
+             u."id" AS "userId", u."name" AS "userName", u."avatarUrl",
+             u."state", u."lga", z."name" AS "zoneName"
+      FROM "site_reviews" r
+      JOIN "users" u ON u."id" = r."userId"
+      LEFT JOIN "zones" z ON z."id" = u."zoneId"
+      ORDER BY r."createdAt" DESC
+    `;
+    res.json({ reviews: reviews.map(formatReviewRow) });
   } catch (err) {
     console.error('[site reviews read]', err);
     res.status(500).json({ message: 'Failed to fetch site reviews' });
@@ -48,19 +53,39 @@ router.post(
   async (req, res) => {
     try {
       const { rating, comment } = req.body;
-      const review = await prisma.siteReview.upsert({
-        where: { userId: req.user.id },
-        update: { rating: Number(rating), comment },
-        create: { userId: req.user.id, rating: Number(rating), comment },
-        include: { user: { include: { zone: true } } },
-      });
-
-      res.status(201).json({ review: formatReview(review) });
+      const reviews = await prisma.$queryRaw`
+        INSERT INTO "site_reviews" ("userId", "rating", "comment", "createdAt", "updatedAt")
+        VALUES (${req.user.id}, ${Number(rating)}, ${comment}, NOW(), NOW())
+        ON CONFLICT ("userId") DO UPDATE SET
+          "rating" = EXCLUDED."rating",
+          "comment" = EXCLUDED."comment",
+          "updatedAt" = NOW()
+        RETURNING "id", "rating", "comment", "createdAt", "userId"
+      `;
+      const [review] = reviews;
+      res.status(201).json({ review: formatReviewRow(review) });
     } catch (err) {
       console.error('[site reviews write]', err);
       res.status(500).json({ message: 'Failed to save review' });
     }
   }
 );
+
+function formatReviewRow(review) {
+  return {
+    id: Number(review.id),
+    rating: review.rating,
+    comment: review.comment,
+    createdAt: review.createdAt,
+    user: {
+      id: review.userId ?? null,
+      name: review.userName || null,
+      avatarUrl: review.avatarUrl || null,
+      state: review.state || null,
+      lga: review.lga || null,
+      zone: review.zoneName || null,
+    },
+  };
+}
 
 module.exports = router;
