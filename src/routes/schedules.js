@@ -41,6 +41,9 @@ router.get(
       if (req.user.role === 'resident' && req.user.zoneId) {
         where.zoneId = req.user.zoneId;
       }
+      if (req.user.role === 'collector') {
+        where.collectorId = req.user.id;
+      }
 
       const [total, schedules] = await Promise.all([
         prisma.pickupSchedule.count({ where }),
@@ -53,6 +56,7 @@ router.get(
             zone: { select: { id: true, name: true, code: true } },
             category: { select: { id: true, name: true, slug: true, color: true, binColor: true } },
             truck: { select: { id: true, plateNumber: true } },
+            collector: { select: { id: true, name: true, email: true, avatarUrl: true } },
           },
         }),
       ]);
@@ -83,6 +87,7 @@ router.get('/upcoming', authenticate, async (req, res) => {
       include: {
         zone: { select: { id: true, name: true, code: true } },
         category: { select: { id: true, name: true, slug: true, color: true, binColor: true, icon: true } },
+        collector: { select: { id: true, name: true, email: true, avatarUrl: true } },
       },
     });
     res.json({ schedules });
@@ -101,6 +106,7 @@ router.get('/:id', authenticate, async (req, res) => {
         category: true,
         truck: true,
         collectionRecord: true,
+        collector: { select: { id: true, name: true, email: true, avatarUrl: true } },
       },
     });
     if (!schedule) return res.status(404).json({ message: 'Schedule not found' });

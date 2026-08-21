@@ -7,10 +7,21 @@
  * For full DB-backed tests, point to a test DATABASE_URL in .env.test
  */
 
-const test = require('node:test');
+const { test, after } = require('node:test');
 const assert = require('node:assert/strict');
 const request = require('supertest');
+const { PrismaClient } = require('@prisma/client');
 const app = require('../../server');
+const prisma = new PrismaClient();
+const createdUserIds = [];
+
+after(async () => {
+  if (createdUserIds.length) {
+    await prisma.siteReview.deleteMany({ where: { userId: { in: createdUserIds } } });
+    await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+  }
+  await prisma.$disconnect();
+});
 
 // ── Health ───────────────────────────────────────────────────
 test('GET /api/health → 200', async () => {
@@ -30,6 +41,7 @@ test('POST /api/auth/register → 201 with token', async () => {
   // 201 means DB is connected; 500 is acceptable in CI without a real DB
   assert.ok([201, 500].includes(res.status), `Unexpected status: ${res.status}`);
   if (res.status === 201) {
+    createdUserIds.push(res.body.user.id);
     assert.ok(res.body.token, 'Token should be present');
     assert.ok(res.body.user, 'User should be present');
     assert.ok(!res.body.user.passwordHash, 'Password hash should not be exposed');
@@ -97,6 +109,7 @@ test('POST /api/site-reviews saves an authenticated review', async () => {
     name: 'Review Test User', email, password: 'secret123', role: 'resident',
   });
   assert.equal(register.status, 201);
+  createdUserIds.push(register.body.user.id);
 
   const res = await request(app)
     .post('/api/site-reviews')
@@ -117,6 +130,7 @@ test('POST /api/users/me/avatar rejects unsupported files', async () => {
   const email = `avatar-${Date.now()}@example.com`;
   const register = await request(app).post('/api/auth/register').send({ name: 'Avatar Test User', email, password: 'secret123', role: 'resident' });
   assert.equal(register.status, 201);
+  createdUserIds.push(register.body.user.id);
   const res = await request(app)
     .post('/api/users/me/avatar')
     .set('Authorization', `Bearer ${register.body.token}`)

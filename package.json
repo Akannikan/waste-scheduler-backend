@@ -13,6 +13,8 @@
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
     "db:seed": "node prisma/seed.js",
+    "db:create-admin": "node scripts/create-admin.js",
+    "db:create-role-user": "node scripts/create-role-user.js",
     "db:studio": "prisma studio",
     "db:push": "prisma db push"
   },

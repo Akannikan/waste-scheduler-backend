@@ -110,7 +110,8 @@ router.post(
   [
     body('title').trim().notEmpty().withMessage('Title is required'),
     body('description').trim().notEmpty().withMessage('Description is required'),
-    body('collectorId').isInt().withMessage('Collector is required'),
+    body('collectorId').isInt({ min: 1 }).withMessage('Collector is required'),
+    body('scheduleId').optional().isInt({ min: 1 }).withMessage('Invalid schedule'),
     body('priority').optional().isIn(['low', 'normal', 'high', 'urgent']),
     body('dueDate').optional().isISO8601(),
   ],
@@ -119,33 +120,49 @@ router.post(
     try {
       const { title, description, collectorId, scheduleId, zoneId, priority, dueDate, notes } = req.body;
 
-      const assignment = await prisma.assignment.create({
-        data: {
-          title,
-          description,
-          adminId: req.user.id,
-          collectorId: Number(collectorId),
-          scheduleId: scheduleId ? Number(scheduleId) : undefined,
-          zoneId: zoneId ? Number(zoneId) : undefined,
-          priority: priority || 'normal',
-          dueDate: dueDate ? new Date(dueDate) : undefined,
-          notes,
-        },
-        include: {
-          admin: { select: { id: true, name: true } },
-          collector: { select: { id: true, name: true, email: true } },
-        },
-      });
+      const numericCollectorId = Number(collectorId);
+      const numericScheduleId = scheduleId ? Number(scheduleId) : null;
+      const [collector, schedule] = await Promise.all([
+        prisma.user.findFirst({ where: { id: numericCollectorId, role: 'collector', isActive: true }, select: { id: true } }),
+        numericScheduleId ? prisma.pickupSchedule.findUnique({ where: { id: numericScheduleId } }) : null,
+      ]);
+      if (!collector) return res.status(422).json({ message: 'Selected collector is not available' });
+      if (numericScheduleId && !schedule) return res.status(404).json({ message: 'Schedule not found' });
+      if (numericScheduleId && schedule.collectorId && schedule.collectorId !== numericCollectorId) {
+        return res.status(409).json({ message: 'Schedule is already assigned to another collector' });
+      }
 
-      // Notify collector
-      await prisma.notification.create({
-        data: {
-          userId: Number(collectorId),
-          title: `📋 New Assignment: ${title}`,
-          message: `You have been assigned a new task by admin. Priority: ${priority || 'normal'}. Check your assignments tab.`,
-          channel: 'in_app',
-          sentAt: new Date(),
-        },
+      const assignment = await prisma.$transaction(async (tx) => {
+        const created = await tx.assignment.create({
+          data: {
+            title,
+            description,
+            adminId: req.user.id,
+            collectorId: numericCollectorId,
+            scheduleId: numericScheduleId || undefined,
+            zoneId: zoneId ? Number(zoneId) : undefined,
+            priority: priority || 'normal',
+            dueDate: dueDate ? new Date(dueDate) : undefined,
+            notes,
+          },
+          include: {
+            admin: { select: { id: true, name: true } },
+            collector: { select: { id: true, name: true, email: true } },
+          },
+        });
+        if (numericScheduleId) {
+          await tx.pickupSchedule.update({ where: { id: numericScheduleId }, data: { collectorId: numericCollectorId } });
+        }
+        await tx.notification.create({
+          data: {
+            userId: numericCollectorId,
+            title: `📋 New Assignment: ${title}`,
+            message: `You have been assigned a new task by admin. Priority: ${priority || 'normal'}. Check your assignments tab.`,
+            channel: 'in_app',
+            sentAt: new Date(),
+          },
+        });
+        return created;
       });
 
       res.status(201).json({ assignment });
@@ -197,6 +214,17 @@ router.put(
           collector: { select: { id: true, name: true } },
         },
       });
+
+      if (existing.scheduleId && req.body.status) {
+        const scheduleStatus = req.body.status === 'completed'
+          ? 'completed'
+          : req.body.status === 'rejected'
+            ? 'cancelled'
+            : undefined;
+        if (scheduleStatus) {
+          await prisma.pickupSchedule.update({ where: { id: existing.scheduleId }, data: { status: scheduleStatus } });
+        }
+      }
 
       // Notify admin when collector updates status
       if (req.body.status && req.user.role === 'collector') {

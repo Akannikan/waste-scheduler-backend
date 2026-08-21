@@ -139,6 +139,7 @@ model User {
   assignedReports    Report[]            @relation("AssignedTo")
   notifications      Notification[]
   collectionRecords  CollectionRecord[]
+  assignedSchedules  PickupSchedule[]    @relation("ScheduleCollector")
   wasteLogs          WasteLog[]
   bills              Bill[]
   payments           Payment[]
@@ -508,6 +509,7 @@ model PickupSchedule {
 
   zone             Zone             @relation(fields: [zoneId], references: [id])
   category         WasteCategory    @relation(fields: [categoryId], references: [id])
+  collector         User?            @relation("ScheduleCollector", fields: [collectorId], references: [id])
   truck            Truck?           @relation(fields: [truckId], references: [id])
   collectionRecord CollectionRecord?
 
