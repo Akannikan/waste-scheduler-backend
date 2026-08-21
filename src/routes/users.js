@@ -157,6 +157,34 @@ router.put(
   }
 );
 
+// ── PUT /api/users/me/preferences ───────────────────────────
+router.put(
+  '/me/preferences',
+  authenticate,
+  [
+    body('theme').isIn(['light', 'dark', 'forest', 'sunset']),
+    body('fontFamily').isIn(['Inter', 'Poppins', 'Playfair Display', 'Nunito']),
+    body('fontSize').isInt({ min: 14, max: 20 }),
+  ],
+  validate,
+  async (req, res) => {
+    try {
+      const user = await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          theme: req.body.theme,
+          fontFamily: req.body.fontFamily,
+          fontSize: Number(req.body.fontSize),
+        },
+      });
+      res.json({ user: safeUser(user) });
+    } catch (err) {
+      console.error('[PUT /users/me/preferences]', err);
+      res.status(500).json({ message: 'Failed to update display preferences' });
+    }
+  }
+);
+
 // ── PUT /api/users/me/password ───────────────────────────────
 router.put(
   '/me/password',
