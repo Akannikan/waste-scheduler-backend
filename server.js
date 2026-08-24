@@ -124,6 +124,38 @@ async function ensureAdditionalQuizQuestions() {
       },
     });
   }
+
+  const questionTargets = { easy: 10, medium: 20, hard: 30, advanced: 40, expert: 50 };
+  const questionTopics = [
+    'household sorting', 'plastic recovery', 'organic waste', 'safe collection', 'drain protection',
+    'recycling quality', 'community planning', 'waste reduction', 'material reuse', 'collector safety',
+    'local environmental action', 'responsible packaging', 'resource recovery', 'public health', 'clean neighbourhoods',
+  ];
+  const answerSets = [
+    ['Choose the safest approved disposal route', 'Burn it in an open space', 'Throw it into a drain', 'Leave it beside the road'],
+    ['Reduce, separate, and send it to the correct facility', 'Mix it with every other material', 'Dump it in a waterway', 'Ignore the collection guidance'],
+    ['Keep the material clean and correctly sorted', 'Add food waste to it', 'Hide it under soil', 'Set it on fire'],
+  ];
+  const quizzes = await prisma.quiz.findMany({ where: { isActive: true } });
+  for (const quiz of quizzes) {
+    const target = questionTargets[quiz.difficulty];
+    if (!target) continue;
+    const currentCount = await prisma.quizQuestion.count({ where: { quizId: quiz.id } });
+    for (let index = currentCount; index < target; index += 1) {
+      const topic = questionTopics[index % questionTopics.length];
+      const answers = answerSets[index % answerSets.length];
+      await prisma.quizQuestion.create({
+        data: {
+          quizId: quiz.id,
+          question: `${quiz.difficulty[0].toUpperCase() + quiz.difficulty.slice(1)} challenge ${index + 1}: Which action best supports ${topic}?`,
+          options: answers,
+          correctAnswer: 0,
+          explanation: `Correct waste practice supports ${topic} by using safe, organised handling.`,
+          points: quiz.difficulty === 'expert' ? 25 : quiz.difficulty === 'advanced' ? 20 : 15,
+        },
+      });
+    }
+  }
 }
 
 async function ensureQuizData() {

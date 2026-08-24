@@ -172,6 +172,17 @@ async function main() {
   });
   const advancedQuizzes = [
     {
+      title: 'Hazardous Waste Essentials', description: 'Protect your community by handling dangerous waste correctly.', category: 'hazardous', difficulty: 'hard', timeLimit: 90, points: 100,
+      questions: [
+        { question: 'Why should incompatible chemicals never be mixed?', options: ['They may react and release heat or toxic gas', 'They become recyclable', 'They become harmless water', 'They improve compost'], correctAnswer: 0, points: 20 },
+        { question: 'What information helps a hazardous waste collector handle a container safely?', options: ['A clear label and known contents', 'A decorative colour only', 'The owner’s favourite brand', 'The weather forecast'], correctAnswer: 0, points: 20 },
+        { question: 'Why should used oil be kept out of soil and waterways?', options: ['It can persist and harm ecosystems', 'It is a natural fertiliser', 'It evaporates harmlessly', 'It improves drinking water'], correctAnswer: 0, points: 20 },
+        { question: 'How should household chemicals be stored before collection?', options: ['In labelled, sealed containers', 'In an open bowl', 'Mixed together', 'In a food bottle'], correctAnswer: 0, points: 20 },
+        { question: 'What is the safest response to a chemical spill?', options: ['Touch it with bare hands', 'Keep people away and contact the proper service', 'Wash it into a drain', 'Cover it with food'], correctAnswer: 1, points: 20 },
+        { question: 'Why is hazardous waste not safe in a regular waste bin?', options: ['It is too light', 'It can contaminate waste streams', 'It smells good', 'It is recyclable'], correctAnswer: 1, points: 20 },
+      ],
+    },
+    {
       title: 'Advanced Circular Economy', description: 'Apply systems thinking to waste reduction, recovery, and circular design.', category: 'environment', difficulty: 'advanced', timeLimit: 75, points: 120,
       questions: [
         { question: 'In a circular economy, a product is designed primarily to be?', options: ['Used once and discarded', 'Kept in use and recovered at end of life', 'Burned immediately', 'Buried without sorting'], correctAnswer: 1, points: 20 },
@@ -197,6 +208,28 @@ async function main() {
   for (const template of advancedQuizzes) {
     const existing = await prisma.quiz.findFirst({ where: { title: template.title } });
     if (!existing) await prisma.quiz.create({ data: { ...template, questions: { create: template.questions } } });
+  }
+
+  const questionTargets = { easy: 10, medium: 20, hard: 30, advanced: 40, expert: 50 };
+  const topicNames = ['sorting', 'recycling', 'composting', 'safe collection', 'drain protection', 'material reuse', 'community planning', 'public health', 'resource recovery', 'waste reduction'];
+  const fillerOptions = ['Use the approved collection route', 'Burn it in the open', 'Throw it into a drain', 'Leave it beside the road'];
+  const allQuizzes = await prisma.quiz.findMany({ where: { isActive: true } });
+  for (const quiz of allQuizzes) {
+    const target = questionTargets[quiz.difficulty];
+    if (!target) continue;
+    const count = await prisma.quizQuestion.count({ where: { quizId: quiz.id } });
+    for (let index = count; index < target; index += 1) {
+      await prisma.quizQuestion.create({
+        data: {
+          quizId: quiz.id,
+          question: `${quiz.difficulty[0].toUpperCase() + quiz.difficulty.slice(1)} practice ${index + 1}: Which action best supports ${topicNames[index % topicNames.length]}?`,
+          options: fillerOptions,
+          correctAnswer: 0,
+          explanation: 'Using the approved route keeps waste handling safe and organised.',
+          points: quiz.difficulty === 'expert' ? 25 : quiz.difficulty === 'advanced' ? 20 : 15,
+        },
+      });
+    }
   }
   console.log(`  ✓ quizzes ensured (${quiz1.title}, ${quiz2.title}, advanced levels)`);
 
