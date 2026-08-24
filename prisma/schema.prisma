@@ -71,6 +71,8 @@ enum QuizDifficulty {
   easy
   medium
   hard
+  advanced
+  expert
 }
 
 enum TransactionStatus {

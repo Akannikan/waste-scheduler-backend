@@ -16,6 +16,13 @@ function shuffleArray(items) {
   return arr;
 }
 
+const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'advanced', 'expert'];
+
+function isDifficultyUnlocked(difficulty, passedDifficulties) {
+  const index = DIFFICULTY_ORDER.indexOf(difficulty);
+  return index <= 0 || passedDifficulties.has(DIFFICULTY_ORDER[index - 1]);
+}
+
 // ── GET /api/quiz  (all active quizzes) ──────────────────────
 router.get('/', authenticate, async (req, res) => {
   try {
@@ -33,10 +40,7 @@ router.get('/', authenticate, async (req, res) => {
     const passedDifficulties = new Set(passedAttempts.map(attempt => attempt.quiz.difficulty));
 
     const quizzesWithUnlock = quizzes.map((quiz) => {
-      const isUnlocked =
-        quiz.difficulty === 'easy' ||
-        (quiz.difficulty === 'medium' && passedDifficulties.has('easy')) ||
-        (quiz.difficulty === 'hard' && passedDifficulties.has('medium'));
+      const isUnlocked = isDifficultyUnlocked(quiz.difficulty, passedDifficulties);
 
       return { ...quiz, isUnlocked };
     });
@@ -93,6 +97,14 @@ router.get('/:id', authenticate, async (req, res) => {
     });
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
+    const passedAttempts = await prisma.quizAttempt.findMany({
+      where: { userId: req.user.id, passed: true },
+      include: { quiz: { select: { difficulty: true } } },
+    });
+    if (!isDifficultyUnlocked(quiz.difficulty, new Set(passedAttempts.map(attempt => attempt.quiz.difficulty)))) {
+      return res.status(403).json({ message: 'Complete the previous difficulty level to unlock this quiz.' });
+    }
+
     // Remove correct answers from response (prevent cheating)
     const safeQuiz = {
       ...quiz,
@@ -129,6 +141,14 @@ router.post(
         include: { questions: true },
       });
       if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+      const passedAttempts = await prisma.quizAttempt.findMany({
+        where: { userId: req.user.id, passed: true },
+        include: { quiz: { select: { difficulty: true } } },
+      });
+      if (!isDifficultyUnlocked(quiz.difficulty, new Set(passedAttempts.map(attempt => attempt.quiz.difficulty)))) {
+        return res.status(403).json({ message: 'Complete the previous difficulty level to unlock this quiz.' });
+      }
 
       let score = 0;
       let totalPoints = 0;
@@ -222,7 +242,7 @@ router.post(
   authorize(['admin']),
   [
     body('title').trim().notEmpty(),
-    body('difficulty').isIn(['easy', 'medium', 'hard']),
+    body('difficulty').isIn(['easy', 'medium', 'hard', 'advanced', 'expert']),
     body('questions').isArray({ min: 1 }),
   ],
   validate,

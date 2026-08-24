@@ -170,7 +170,35 @@ async function main() {
       },
     },
   });
-  console.log(`  ✓ 2 quizzes created (${quiz1.title}, ${quiz2.title})`);
+  const advancedQuizzes = [
+    {
+      title: 'Advanced Circular Economy', description: 'Apply systems thinking to waste reduction, recovery, and circular design.', category: 'environment', difficulty: 'advanced', timeLimit: 75, points: 120,
+      questions: [
+        { question: 'In a circular economy, a product is designed primarily to be?', options: ['Used once and discarded', 'Kept in use and recovered at end of life', 'Burned immediately', 'Buried without sorting'], correctAnswer: 1, points: 20 },
+        { question: 'What is extended producer responsibility?', options: ['Consumers sort every material', 'Producers help manage products after use', 'Collectors set all prices', 'Landfills accept unlimited waste'], correctAnswer: 1, points: 20 },
+        { question: 'Which option is highest in the waste hierarchy?', options: ['Prevention', 'Landfill', 'Open burning', 'Littering'], correctAnswer: 0, points: 20 },
+        { question: 'Why is material contamination a major recycling problem?', options: ['It improves quality', 'It can make an entire batch unsuitable', 'It increases compost nutrients', 'It makes sorting unnecessary'], correctAnswer: 1, points: 20 },
+        { question: 'Which metric best measures landfill diversion?', options: ['Waste sent to landfill compared with total waste generated', 'Number of collection trucks only', 'Rainfall each month', 'Number of street signs'], correctAnswer: 0, points: 20 },
+        { question: 'Why are local reuse networks valuable?', options: ['They extend product life and reduce new material demand', 'They require more dumping', 'They prevent repairs', 'They only increase packaging'], correctAnswer: 0, points: 20 },
+      ],
+    },
+    {
+      title: 'Expert Waste Strategy', description: 'Challenge yourself with advanced waste policy, data, and operational decisions.', category: 'policy', difficulty: 'expert', timeLimit: 90, points: 160,
+      questions: [
+        { question: 'What does source separation achieve?', options: ['It mixes all materials', 'It keeps material streams cleaner from the start', 'It removes the need for collection', 'It turns hazardous waste into food'], correctAnswer: 1, points: 25 },
+        { question: 'Which approach is most useful when planning collection routes?', options: ['Ignore demand patterns', 'Use route, volume, and service data', 'Visit every street randomly', 'Collect only when bins overflow'], correctAnswer: 1, points: 25 },
+        { question: 'Why should hazardous waste be tracked separately?', options: ['It has different risks and treatment requirements', 'It is always harmless', 'It is easier to burn', 'It belongs with food scraps'], correctAnswer: 0, points: 25 },
+        { question: 'What is a life-cycle assessment used to examine?', options: ['Only a product logo', 'Environmental impacts across a product life cycle', 'Only bin colour', 'A collector attendance sheet'], correctAnswer: 1, points: 25 },
+        { question: 'Which policy best supports waste prevention?', options: ['Pay-as-you-throw with reuse support', 'Unlimited free dumping', 'Open burning incentives', 'Removing repair options'], correctAnswer: 0, points: 25 },
+        { question: 'What is the strongest reason to publish waste performance data?', options: ['It enables accountability and better decisions', 'It hides service gaps', 'It makes sorting impossible', 'It replaces all field work'], correctAnswer: 0, points: 25 },
+      ],
+    },
+  ];
+  for (const template of advancedQuizzes) {
+    const existing = await prisma.quiz.findFirst({ where: { title: template.title } });
+    if (!existing) await prisma.quiz.create({ data: { ...template, questions: { create: template.questions } } });
+  }
+  console.log(`  ✓ quizzes ensured (${quiz1.title}, ${quiz2.title}, advanced levels)`);
 
   console.log('\n✅  Database seeded successfully!\n');
   console.log('💰  Pricing: ₦2,000/month flat rate (Lagos Island: ₦2,500, Ikeja GRA: ₦3,000)\n');
