@@ -40,10 +40,53 @@ const { ensurePlatformSettings } = require('./src/services/payment.service');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+async function ensureAdditionalQuizQuestions() {
+  const additions = {
+    'Waste Sorting Basics': [
+      { question: 'Which material is usually recyclable when clean and dry?', options: ['Cardboard', 'Food scraps', 'Used tissue', 'Wet soil'], correctAnswer: 0, explanation: 'Clean, dry cardboard can usually be sorted for recycling.', points: 10 },
+      { question: 'Why should recyclable containers be rinsed?', options: ['To make them heavier', 'To reduce contamination', 'To change their colour', 'To make them compostable'], correctAnswer: 1, explanation: 'Rinsing removes leftover food and drink that can contaminate recyclable materials.', points: 10 },
+      { question: 'Which action best reduces single-use plastic waste?', options: ['Use a refillable bottle', 'Burn plastic bags', 'Throw plastic in drains', 'Buy more wrappers'], correctAnswer: 0, explanation: 'Refillable items reduce the amount of single-use plastic entering the waste stream.', points: 10 },
+    ],
+    'Compost & Organic Waste': [
+      { question: 'What does finished compost look and smell like?', options: ['Dark and earthy', 'Bright blue and sweet', 'Oily and sticky', 'Clear and watery'], correctAnswer: 0, explanation: 'Mature compost is dark, crumbly, and has an earthy smell.', points: 10 },
+      { question: 'Why should a compost pile have airflow?', options: ['It supports aerobic decomposition', 'It freezes the pile', 'It prevents all moisture', 'It makes plastic disappear'], correctAnswer: 0, explanation: 'Air helps beneficial organisms break organic material down without strong odours.', points: 15 },
+      { question: 'Which item is a good green compost ingredient?', options: ['Fresh grass clippings', 'Glass shards', 'Aluminium foil', 'Synthetic fabric'], correctAnswer: 0, explanation: 'Fresh grass clippings are nitrogen-rich green material for composting.', points: 10 },
+    ],
+    'E-Waste Safety': [
+      { question: 'What should be done with a swollen phone battery?', options: ['Puncture it', 'Place it in a fire', 'Handle it carefully and use a specialist drop-off', 'Put it in compost'], correctAnswer: 2, explanation: 'Swollen batteries can be dangerous and need specialist handling.', points: 15 },
+      { question: 'Which part of an old computer may contain recoverable materials?', options: ['Circuit board', 'Banana peel', 'Garden soil', 'Cotton cloth'], correctAnswer: 0, explanation: 'Circuit boards contain materials that specialist recyclers can recover.', points: 15 },
+      { question: 'Why should electronics not be burned?', options: ['They release toxic fumes', 'They become compost', 'They improve soil', 'They produce clean water'], correctAnswer: 0, explanation: 'Burning electronics can release toxic chemicals and heavy metals.', points: 15 },
+    ],
+    'Hazardous Waste Essentials': [
+      { question: 'How should household chemicals be stored before collection?', options: ['In labelled, sealed containers', 'In an open bowl', 'Mixed together', 'In a food bottle'], correctAnswer: 0, explanation: 'Sealed, labelled containers reduce leaks and accidental exposure.', points: 15 },
+      { question: 'What is the safest response to a chemical spill?', options: ['Touch it with bare hands', 'Keep people away and contact the proper service', 'Wash it into a drain', 'Cover it with food'], correctAnswer: 1, explanation: 'Keep people away and get trained help for hazardous spills.', points: 15 },
+      { question: 'Which item should be kept away from children until collection?', options: ['Cleaning chemicals', 'Empty paper', 'Clean cardboard', 'Dry leaves'], correctAnswer: 0, explanation: 'Cleaning chemicals can cause poisoning or burns.', points: 15 },
+    ],
+    'Community Cleanliness': [
+      { question: 'What is a useful way to organise a community cleanup?', options: ['Plan zones and provide gloves and bags', 'Work without any plan', 'Dump collected waste nearby', 'Burn everything afterwards'], correctAnswer: 0, explanation: 'Planning zones and providing supplies makes cleanups safer and more effective.', points: 10 },
+      { question: 'Why are public bins useful?', options: ['They support proper disposal', 'They create litter', 'They block every drain', 'They replace recycling education'], correctAnswer: 0, explanation: 'Accessible bins make it easier for people to dispose of waste correctly.', points: 10 },
+      { question: 'Which habit helps prevent blocked drains?', options: ['Keep litter out of drainage channels', 'Sweep waste into gutters', 'Pour oil into drains', 'Leave bags beside waterways'], correctAnswer: 0, explanation: 'Keeping solid waste and oil out of drains helps reduce blockages and flooding.', points: 15 },
+    ],
+  };
+
+  for (const [title, questions] of Object.entries(additions)) {
+    const quiz = await prisma.quiz.findFirst({ where: { title } });
+    if (!quiz) continue;
+    const existing = await prisma.question.findMany({ where: { quizId: quiz.id }, select: { question: true } });
+    const existingTexts = new Set(existing.map(item => item.question));
+    for (const question of questions) {
+      if (!existingTexts.has(question.question)) await prisma.question.create({ data: { ...question, quizId: quiz.id } });
+    }
+  }
+}
+
 async function ensureQuizData() {
   try {
     const quizCount = await prisma.quiz.count();
-    if (quizCount > 0) return;
+    if (quizCount > 0) {
+      await ensureAdditionalQuizQuestions();
+      return;
+    }
 
     console.log('[BOOTSTRAP] No quizzes found. Creating a richer default quiz set...');
 
@@ -146,6 +189,7 @@ async function ensureQuizData() {
     }
 
     console.log('[BOOTSTRAP] Default quiz data created successfully.');
+    await ensureAdditionalQuizQuestions();
   } catch (err) {
     console.error('[BOOTSTRAP] Failed to create default quiz data:', err.message);
   }
