@@ -47,6 +47,7 @@ router.get('/', authenticate, async (req, res) => {
 
     res.json({ quizzes: quizzesWithUnlock });
   } catch (err) {
+    console.error('[GET /api/quiz] Failed to fetch quizzes:', err.message, err.code || '');
     res.status(500).json({ message: 'Failed to fetch quizzes' });
   }
 });
