@@ -130,12 +130,13 @@ router.post(
   authenticate,
   [
     body('answers').isObject().withMessage('Answers must be an object { questionId: selectedIndex }'),
+    body('questionIds').isArray({ min: 1 }).withMessage('Question IDs must be an array'),
   ],
   validate,
   async (req, res) => {
     try {
       const quizId = parseInt(req.params.id);
-      const { answers } = req.body;
+      const { answers, questionIds } = req.body;
 
       const quiz = await prisma.quiz.findUnique({
         where: { id: quizId },
@@ -151,11 +152,20 @@ router.post(
         return res.status(403).json({ message: 'Complete the previous difficulty level to unlock this quiz.' });
       }
 
+      const selectedQuestionIds = new Set(questionIds.map(Number));
+      if (selectedQuestionIds.size !== questionIds.length || [...selectedQuestionIds].some(id => !Number.isInteger(id))) {
+        return res.status(400).json({ message: 'Question IDs must contain unique integers.' });
+      }
+      const selectedQuestions = quiz.questions.filter(question => selectedQuestionIds.has(question.id));
+      if (selectedQuestions.length !== selectedQuestionIds.size) {
+        return res.status(400).json({ message: 'One or more questions do not belong to this quiz.' });
+      }
+
       let score = 0;
       let totalPoints = 0;
       const results = [];
 
-      for (const question of quiz.questions) {
+      for (const question of selectedQuestions) {
         totalPoints += question.points;
         const rawUserAnswer = answers[question.id];
         const normalizedUserAnswer =

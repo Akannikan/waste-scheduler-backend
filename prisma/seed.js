@@ -210,7 +210,7 @@ async function main() {
     if (!existing) await prisma.quiz.create({ data: { ...template, questions: { create: template.questions } } });
   }
 
-  const questionTargets = { easy: 10, medium: 20, hard: 30, advanced: 40, expert: 50 };
+  const questionTargets = { easy: 70, medium: 70, hard: 70, advanced: 70, expert: 70 };
   const topicNames = ['sorting', 'recycling', 'composting', 'safe collection', 'drain protection', 'material reuse', 'community planning', 'public health', 'resource recovery', 'waste reduction'];
   const fillerOptions = ['Use the approved collection route', 'Burn it in the open', 'Throw it into a drain', 'Leave it beside the road'];
   const allQuizzes = await prisma.quiz.findMany({ where: { isActive: true } });
