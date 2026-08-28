@@ -222,7 +222,7 @@ async function main() {
       await prisma.quizQuestion.create({
         data: {
           quizId: quiz.id,
-          question: `${quiz.difficulty[0].toUpperCase() + quiz.difficulty.slice(1)} practice ${index + 1}: Which action best supports ${topicNames[index % topicNames.length]}?`,
+          question: `Which action best supports ${topicNames[index % topicNames.length]}?`,
           options: fillerOptions,
           correctAnswer: 0,
           explanation: 'Using the approved route keeps waste handling safe and organised.',

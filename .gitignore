@@ -2,5 +2,7 @@ node_modules/
 .env
 dist/
 *.log
-prisma/migrations/
+prisma/migrations/*/
+!prisma/migrations/0004_quiz_70_questions/
+!prisma/migrations/0004_quiz_70_questions/migration.sql
 uploads/

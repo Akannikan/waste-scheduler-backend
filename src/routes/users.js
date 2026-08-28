@@ -94,6 +94,22 @@ router.post('/me/avatar', authenticate, avatarUpload.single('avatar'), async (re
   }
 });
 
+router.post('/me/upgrade-to-collector', authenticate, async (req, res) => {
+  try {
+    if (req.user.role !== 'resident') {
+      return res.status(400).json({ message: 'Only resident accounts can be upgraded to collector.' });
+    }
+    const user = await prisma.user.update({
+      where: { id: req.user.id },
+      data: { role: 'collector' },
+    });
+    res.json({ user: safeUser(user), message: 'Your account is now a collector account.' });
+  } catch (err) {
+    console.error('[POST /users/me/upgrade-to-collector]', err);
+    res.status(500).json({ message: 'Failed to upgrade account' });
+  }
+});
+
 // ── GET /api/users/:id  (admin or self) ──────────────────────
 router.get('/:id', authenticate, async (req, res) => {
   try {
