@@ -16,6 +16,10 @@ function shuffleArray(items) {
   return arr;
 }
 
+function cleanQuestionText(question) {
+  return question.replace(/^(?:easy|medium|hard|advanced|expert) (?:practice|challenge) \d+:\s*/i, '');
+}
+
 const DIFFICULTY_ORDER = ['easy', 'medium', 'hard', 'advanced', 'expert'];
 
 function isDifficultyUnlocked(difficulty, passedDifficulties) {
@@ -111,7 +115,7 @@ router.get('/:id', authenticate, async (req, res) => {
       ...quiz,
       questions: shuffleArray(quiz.questions).map(q => ({
         id: q.id,
-        question: q.question,
+        question: cleanQuestionText(q.question),
         options: q.options,
         points: q.points,
         // correctAnswer NOT sent to client

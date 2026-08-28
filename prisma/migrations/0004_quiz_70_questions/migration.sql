@@ -24,7 +24,7 @@ DECLARE
 BEGIN
   UPDATE quiz_questions
   SET question = regexp_replace(question, '^[A-Za-z]+ practice [0-9]+: ', '')
-  WHERE question ~ '^[A-Za-z]+ practice [0-9]+: ';
+  WHERE question ~ '^[A-Za-z]+ (practice|challenge) [0-9]+: ';
 
   FOR quiz_record IN
     SELECT id, difficulty::text AS difficulty
@@ -45,8 +45,7 @@ BEGIN
         points
       ) VALUES (
         quiz_record.id,
-        initcap(quiz_record.difficulty) || ' practice ' || (question_index + 1) ||
-          ': Which action best supports ' || topic_names[(question_index % array_length(topic_names, 1)) + 1] || '?',
+        'Which action best supports ' || topic_names[(question_index % array_length(topic_names, 1)) + 1] || '?',
         filler_options,
         0,
         'Using the approved route keeps waste handling safe and organised.',

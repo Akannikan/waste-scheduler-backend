@@ -84,7 +84,7 @@ async function ensureAdditionalQuizQuestions() {
 
   const higherLevelQuizzes = [
     {
-      title: 'Advanced Circular Economy', category: 'environment', difficulty: 'advanced', timeLimit: 75, points: 120,
+      title: 'Advanced Circular Economy', category: 'environment', difficulty: 'advanced', timeLimit: 300, points: 120,
       description: 'Apply systems thinking to waste reduction, recovery, and circular design.',
       questions: [
         { question: 'In a circular economy, a product is designed primarily to be?', options: ['Used once and discarded', 'Kept in use and recovered at end of life', 'Burned immediately', 'Buried without sorting'], correctAnswer: 1, explanation: 'Circular systems keep products and materials useful for as long as possible.', points: 20 },
@@ -96,7 +96,7 @@ async function ensureAdditionalQuizQuestions() {
       ],
     },
     {
-      title: 'Expert Waste Strategy', category: 'policy', difficulty: 'expert', timeLimit: 90, points: 160,
+      title: 'Expert Waste Strategy', category: 'policy', difficulty: 'expert', timeLimit: 500, points: 160,
       description: 'Challenge yourself with advanced waste policy, data, and operational decisions.',
       questions: [
         { question: 'What does source separation achieve?', options: ['It mixes all materials', 'It keeps material streams cleaner from the start', 'It removes the need for collection', 'It turns hazardous waste into food'], correctAnswer: 1, explanation: 'Separating materials where they are produced improves recovery quality and safety.', points: 25 },
@@ -125,7 +125,7 @@ async function ensureAdditionalQuizQuestions() {
     });
   }
 
-  const questionTargets = { easy: 10, medium: 20, hard: 30, advanced: 40, expert: 50 };
+  const questionTargets = { easy: 70, medium: 70, hard: 70, advanced: 70, expert: 70 };
   const questionTopics = [
     'household sorting', 'plastic recovery', 'organic waste', 'safe collection', 'drain protection',
     'recycling quality', 'community planning', 'waste reduction', 'material reuse', 'collector safety',
@@ -147,7 +147,7 @@ async function ensureAdditionalQuizQuestions() {
       await prisma.quizQuestion.create({
         data: {
           quizId: quiz.id,
-          question: `${quiz.difficulty[0].toUpperCase() + quiz.difficulty.slice(1)} challenge ${index + 1}: Which action best supports ${topic}?`,
+          question: `Which action best supports ${topic}?`,
           options: answers,
           correctAnswer: 0,
           explanation: `Correct waste practice supports ${topic} by using safe, organised handling.`,
@@ -174,7 +174,7 @@ async function ensureQuizData() {
         description: 'Quick recycling checks for everyday waste sorting.',
         category: 'recycling',
         difficulty: 'easy',
-        timeLimit: 60,
+        timeLimit: 100,
         points: 50,
         questions: [
           { question: 'Which bin should you use for plastic water bottles?', options: ['Green Bin', 'Blue Bin', 'Brown Bin', 'Grey Bin'], correctAnswer: 1, explanation: 'Plastic bottles go in the Blue Bin for recycling.', points: 10 },
@@ -189,7 +189,7 @@ async function ensureQuizData() {
         description: 'Learn how organic waste can become useful compost.',
         category: 'organic',
         difficulty: 'easy',
-        timeLimit: 75,
+        timeLimit: 150,
         points: 60,
         questions: [
           { question: 'Which material is best for composting?', options: ['Plastic wrappers', 'Cooked meat', 'Fruit peels', 'Used batteries'], correctAnswer: 2, explanation: 'Fruit peels and food scraps are ideal for composting.', points: 10 },
@@ -205,7 +205,7 @@ async function ensureQuizData() {
         description: 'Know how to safely dispose of electronics and batteries.',
         category: 'e-waste',
         difficulty: 'medium',
-        timeLimit: 90,
+        timeLimit: 200,
         points: 75,
         questions: [
           { question: 'What should you do before disposing of an old phone?', options: ['Keep the SIM card in place', 'Wipe personal data', 'Throw it in the drain', 'Put it in the brown bin'], correctAnswer: 1, explanation: 'Wiping personal data helps protect your privacy before e-waste disposal.', points: 15 },
@@ -221,7 +221,7 @@ async function ensureQuizData() {
         description: 'Protect your community by handling dangerous waste correctly.',
         category: 'hazardous',
         difficulty: 'hard',
-        timeLimit: 90,
+        timeLimit: 300,
         points: 90,
         questions: [
           { question: 'Which item is hazardous waste?', options: ['Glass bottle', 'Plastic bottle', 'Used engine oil', 'Paper'], correctAnswer: 2, explanation: 'Used engine oil contains harmful chemicals and must be handled safely.', points: 15 },
@@ -237,7 +237,7 @@ async function ensureQuizData() {
         description: 'Squares of environmental responsibility for daily living.',
         category: 'community',
         difficulty: 'medium',
-        timeLimit: 75,
+        timeLimit: 500,
         points: 70,
         questions: [
           { question: 'Why is littering harmful?', options: ['It collects dust', 'It blocks drains and pollutes the environment', 'It is a way to recycle', 'It reduces traffic'], correctAnswer: 1, explanation: 'Litter can clog drains and damage public health and ecosystems.', points: 10 },

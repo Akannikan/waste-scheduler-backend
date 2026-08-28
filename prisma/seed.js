@@ -137,7 +137,7 @@ async function main() {
       description: 'Test your knowledge of proper waste sorting and recycling in Nigeria',
       category: 'recycling',
       difficulty: 'easy',
-      timeLimit: 60,
+      timeLimit: 100,
       points: 50,
       questions: {
         create: [
@@ -157,7 +157,7 @@ async function main() {
       description: 'Advanced quiz on environmental impact and recycling in Nigeria',
       category: 'environment',
       difficulty: 'medium',
-      timeLimit: 90,
+      timeLimit: 150,
       points: 75,
       questions: {
         create: [
@@ -172,7 +172,7 @@ async function main() {
   });
   const advancedQuizzes = [
     {
-      title: 'Hazardous Waste Essentials', description: 'Protect your community by handling dangerous waste correctly.', category: 'hazardous', difficulty: 'hard', timeLimit: 90, points: 100,
+      title: 'Hazardous Waste Essentials', description: 'Protect your community by handling dangerous waste correctly.', category: 'hazardous', difficulty: 'hard', timeLimit: 200, points: 100,
       questions: [
         { question: 'Why should incompatible chemicals never be mixed?', options: ['They may react and release heat or toxic gas', 'They become recyclable', 'They become harmless water', 'They improve compost'], correctAnswer: 0, points: 20 },
         { question: 'What information helps a hazardous waste collector handle a container safely?', options: ['A clear label and known contents', 'A decorative colour only', 'The owner’s favourite brand', 'The weather forecast'], correctAnswer: 0, points: 20 },
@@ -183,7 +183,7 @@ async function main() {
       ],
     },
     {
-      title: 'Advanced Circular Economy', description: 'Apply systems thinking to waste reduction, recovery, and circular design.', category: 'environment', difficulty: 'advanced', timeLimit: 75, points: 120,
+      title: 'Advanced Circular Economy', description: 'Apply systems thinking to waste reduction, recovery, and circular design.', category: 'environment', difficulty: 'advanced', timeLimit: 300, points: 120,
       questions: [
         { question: 'In a circular economy, a product is designed primarily to be?', options: ['Used once and discarded', 'Kept in use and recovered at end of life', 'Burned immediately', 'Buried without sorting'], correctAnswer: 1, points: 20 },
         { question: 'What is extended producer responsibility?', options: ['Consumers sort every material', 'Producers help manage products after use', 'Collectors set all prices', 'Landfills accept unlimited waste'], correctAnswer: 1, points: 20 },
@@ -194,7 +194,7 @@ async function main() {
       ],
     },
     {
-      title: 'Expert Waste Strategy', description: 'Challenge yourself with advanced waste policy, data, and operational decisions.', category: 'policy', difficulty: 'expert', timeLimit: 90, points: 160,
+      title: 'Expert Waste Strategy', description: 'Challenge yourself with advanced waste policy, data, and operational decisions.', category: 'policy', difficulty: 'expert', timeLimit: 500, points: 160,
       questions: [
         { question: 'What does source separation achieve?', options: ['It mixes all materials', 'It keeps material streams cleaner from the start', 'It removes the need for collection', 'It turns hazardous waste into food'], correctAnswer: 1, points: 25 },
         { question: 'Which approach is most useful when planning collection routes?', options: ['Ignore demand patterns', 'Use route, volume, and service data', 'Visit every street randomly', 'Collect only when bins overflow'], correctAnswer: 1, points: 25 },
