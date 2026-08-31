@@ -138,7 +138,6 @@ router.put(
     body('address').optional().isString(),
     body('zoneId').optional().isInt(),
     body('state').optional().isString().isLength({ max: 60 }),
-    body('lga').optional().isString().isLength({ max: 100 }),
     body('theme').optional().isIn(['light', 'dark', 'forest', 'sunset']),
     body('fontFamily').optional().isIn(['Inter', 'Poppins', 'Playfair Display', 'Nunito']),
     body('fontSize').optional().isInt({ min: 14, max: 20 }),
@@ -146,7 +145,7 @@ router.put(
   validate,
   async (req, res) => {
     try {
-      const { name, phone, address, zoneId, state, lga, theme, fontFamily, fontSize } = req.body;
+      const { name, phone, address, zoneId, state, theme, fontFamily, fontSize } = req.body;
       const data = {};
       if (name !== undefined) data.name = name;
       if (phone !== undefined) data.phone = phone || null;
@@ -156,22 +155,20 @@ router.put(
       if (fontSize !== undefined) data.fontSize = Number(fontSize);
 
       const hasZoneId = zoneId !== undefined && zoneId !== null && zoneId !== '';
-      const hasLocationFields = state !== undefined || lga !== undefined || zoneId !== undefined;
+      const hasLocationFields = state !== undefined || zoneId !== undefined;
       if (hasZoneId) {
         const selectedZoneId = Number(zoneId);
         const zone = await prisma.zone.findUnique({ where: { id: selectedZoneId } });
         if (!zone) {
           return res.status(422).json({ message: 'Selected collection zone was not found. Please choose a valid zone.' });
         }
-        if ((state && zone.state !== state) || (lga && zone.lga !== lga)) {
-          return res.status(422).json({ message: 'State, zone, and LGA must belong together' });
+        if (state && zone.state !== state) {
+          return res.status(422).json({ message: 'State and zone must belong together' });
         }
         data.state = zone.state;
-        data.lga = zone.lga;
         data.zoneId = zone.id;
       } else if (hasLocationFields) {
         data.state = state || null;
-        data.lga = lga || null;
         data.zoneId = null;
       }
       if (Object.keys(data).length === 0) {

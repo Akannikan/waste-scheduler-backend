@@ -38,16 +38,16 @@ router.post(
   validate,
   async (req, res) => {
     try {
-      const { name, email, password, phone, address, state, lga, zoneId } = req.body;
+      const { name, email, password, phone, address, state, zoneId } = req.body;
       const role = 'resident';
 
-      let location = { state, lga, zoneId: zoneId ? Number(zoneId) : undefined };
+      let location = { state, zoneId: zoneId ? Number(zoneId) : undefined };
       if (location.zoneId) {
         const zone = await prisma.zone.findUnique({ where: { id: location.zoneId } });
-        if (!zone || (state && zone.state !== state) || (lga && zone.lga !== lga)) {
-          return res.status(422).json({ message: 'State, zone, and LGA must belong together' });
+        if (!zone || (state && zone.state !== state)) {
+          return res.status(422).json({ message: 'State and zone must belong together' });
         }
-        location = { state: zone.state, lga: zone.lga, zoneId: zone.id };
+        location = { state: zone.state, zoneId: zone.id };
       }
 
       const existing = await prisma.user.findUnique({ where: { email } });

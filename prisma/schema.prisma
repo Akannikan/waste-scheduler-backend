@@ -119,7 +119,6 @@ model User {
   phone           String?   @db.VarChar(20)
   address         String?   @db.VarChar(255)
   state           String?   @db.VarChar(60)
-  lga             String?   @db.VarChar(100)
   avatarUrl       String?
   theme           String    @default("light") @db.VarChar(30)
   fontFamily      String    @default("Inter") @db.VarChar(60)
@@ -389,7 +388,6 @@ model Zone {
   code        String   @unique @db.VarChar(20)
   description String?
   state       String?  @db.VarChar(60)
-  lga         String?  @db.VarChar(100)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -613,7 +611,6 @@ model RecyclingCenter {
   website      String?
   zoneId       Int?
   state        String?  @db.VarChar(60)
-  lga          String?  @db.VarChar(100)
   openingHours String?
   acceptedTypes String[]
   isActive     Boolean  @default(true)

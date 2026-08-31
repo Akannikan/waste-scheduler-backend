@@ -3,22 +3,16 @@ const { body, query } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { authenticate, authorize } = require('../middleware/auth');
 const { validate } = require('../middleware/validate');
-const nigeriaLocations = require('nigerian-states-and-lgas');
-
 const router = express.Router();
 const prisma = new PrismaClient();
 
-const NIGERIAN_STATES = [...new Set([...nigeriaLocations.states(), 'FCT'])].map((state) => (
-  state === 'Kastina' ? 'Katsina' : state
-));
-
-function catalogLgas(state) {
-  if (state === 'FCT') return ['Municipal Area Council'];
-  const match = nigeriaLocations.all().find((entry) => (
-    (entry.state === 'Kastina' ? 'Katsina' : entry.state) === state
-  ));
-  return match?.lgas || [];
-}
+const NIGERIAN_STATES = [
+  'Abia','Adamawa','Akwa Ibom','Anambra','Bauchi','Bayelsa','Benue','Borno',
+  'Cross River','Delta','Ebonyi','Edo','Ekiti','Enugu','FCT','Gombe','Imo',
+  'Jigawa','Kaduna','Kano','Katsina','Kebbi','Kogi','Kwara','Lagos','Nasarawa',
+  'Niger','Ogun','Ondo','Osun','Oyo','Plateau','Rivers','Sokoto','Taraba',
+  'Yobe','Zamfara',
+];
 
 router.get('/states', async (req, res) => {
   try {
@@ -31,20 +25,6 @@ router.get('/states', async (req, res) => {
     res.json({ states: [...new Set([...NIGERIAN_STATES, ...states.map(item => item.state).filter(Boolean)])].sort() });
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch states' });
-  }
-});
-
-router.get('/lgas', [query('state').trim().notEmpty()], validate, async (req, res) => {
-  try {
-    const zones = await prisma.zone.findMany({
-      where: { isActive: true, state: req.query.state },
-      distinct: ['lga'],
-      orderBy: { lga: 'asc' },
-      select: { lga: true },
-    });
-    res.json({ lgas: [...new Set([...catalogLgas(req.query.state), ...zones.map(item => item.lga).filter(Boolean)])].sort() });
-  } catch (err) {
-    res.status(500).json({ message: 'Failed to fetch LGAs' });
   }
 });
 
@@ -78,13 +58,12 @@ router.post(
     body('code').trim().notEmpty().withMessage('Zone code is required'),
     body('description').optional().isString(),
     body('state').optional().isString().isLength({ max: 60 }),
-    body('lga').optional().isString().isLength({ max: 100 }),
   ],
   validate,
   async (req, res) => {
     try {
-      const { name, code, description, state, lga } = req.body;
-      const zone = await prisma.zone.create({ data: { name, code: code.toUpperCase(), description, state, lga } });
+      const { name, code, description, state } = req.body;
+      const zone = await prisma.zone.create({ data: { name, code: code.toUpperCase(), description, state } });
       res.status(201).json({ zone });
     } catch (err) {
       if (err.code === 'P2002') return res.status(409).json({ message: 'Zone code already exists' });
@@ -96,8 +75,8 @@ router.post(
 router.put('/:id', authenticate, authorize(['admin']), async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, code, description, state, lga, isActive } = req.body;
-    const zone = await prisma.zone.update({ where: { id }, data: { name, code, description, state, lga, isActive } });
+    const { name, code, description, state, isActive } = req.body;
+    const zone = await prisma.zone.update({ where: { id }, data: { name, code, description, state, isActive } });
     res.json({ zone });
   } catch (err) {
     if (err.code === 'P2025') return res.status(404).json({ message: 'Zone not found' });
