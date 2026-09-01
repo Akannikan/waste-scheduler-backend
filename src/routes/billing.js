@@ -302,7 +302,7 @@ router.get('/receipt/:billId', authenticate, async (req, res) => {
     const bill = await prisma.bill.findUnique({
       where: { id: billId },
       include: {
-        user: { select: { id: true, name: true, email: true, phone: true, address: true, state: true, lga: true } },
+        user: { select: { id: true, name: true, email: true, phone: true, address: true, state: true } },
         payments: { where: { status: 'paid' }, orderBy: { confirmedAt: 'desc' }, take: 1 },
       },
     });
@@ -381,7 +381,7 @@ router.get('/receipt/:billId', authenticate, async (req, res) => {
           ['Email', bill.user.email],
           ['Phone', bill.user.phone || '—'],
           ['Address', bill.user.address || '—'],
-          ['State / LGA', bill.user.state ? `${bill.user.state}${bill.user.lga ? ' / ' + bill.user.lga : ''}` : '—'],
+          ['State', bill.user.state || '—'],
         ].map(([k,v]) => `<div class="row"><span class="key">${k}</span><span class="val">${v}</span></div>`).join('')}
       </div>
 

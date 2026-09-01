@@ -12,28 +12,28 @@ async function main() {
 
   // ── Nigerian Zones (Kwara first, with existing states preserved) ──
   const zones = await Promise.all([
-    prisma.zone.upsert({ where: { code: 'LAG-IS' }, update: {}, create: { name: 'Lagos Island', code: 'LAG-IS', state: 'Lagos', lga: 'Lagos Island', description: 'Lagos Island LGA — Eko, Lafiaji, Olowogbowo' } }),
-    prisma.zone.upsert({ where: { code: 'LAG-IK' }, update: {}, create: { name: 'Ikeja GRA', code: 'LAG-IK', state: 'Lagos', lga: 'Ikeja', description: 'Ikeja LGA — GRA, Allen Avenue, Alausa' } }),
-    prisma.zone.upsert({ where: { code: 'LAG-SUR' }, update: {}, create: { name: 'Surulere', code: 'LAG-SUR', state: 'Lagos', lga: 'Surulere', description: 'Surulere LGA — Aguda, Itire, Iponri' } }),
-    prisma.zone.upsert({ where: { code: 'ABJ-CBD' }, update: {}, create: { name: 'Abuja Central', code: 'ABJ-CBD', state: 'FCT', lga: 'Municipal Area Council', description: 'Abuja CBD — Maitama, Asokoro, Wuse' } }),
-    prisma.zone.upsert({ where: { code: 'PH-PH' }, update: {}, create: { name: 'Port Harcourt City', code: 'PH-PH', state: 'Rivers', lga: 'Port Harcourt', description: 'PH City LGA — Old GRA, Trans Amadi, Diobu' } }),
-    prisma.zone.upsert({ where: { code: 'KAN-MUN' }, update: {}, create: { name: 'Kano Municipal', code: 'KAN-MUN', state: 'Kano', lga: 'Kano Municipal', description: 'Kano Municipal LGA — Fagge, Gwale, Nassarawa' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-ILW' }, update: { state: 'Kwara', lga: 'Ilorin West' }, create: { name: 'Ilorin West', code: 'KWR-ILW', state: 'Kwara', lga: 'Ilorin West', description: 'Ilorin West LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-ILE' }, update: { state: 'Kwara', lga: 'Ilorin East' }, create: { name: 'Ilorin East', code: 'KWR-ILE', state: 'Kwara', lga: 'Ilorin East', description: 'Ilorin East LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-OFF' }, update: { state: 'Kwara', lga: 'Offa' }, create: { name: 'Offa', code: 'KWR-OFF', state: 'Kwara', lga: 'Offa', description: 'Offa LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-ASA' }, update: { state: 'Kwara', lga: 'Asa' }, create: { name: 'Asa', code: 'KWR-ASA', state: 'Kwara', lga: 'Asa', description: 'Asa LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-BAR' }, update: { state: 'Kwara', lga: 'Baruten' }, create: { name: 'Baruten', code: 'KWR-BAR', state: 'Kwara', lga: 'Baruten', description: 'Baruten LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-EDU' }, update: { state: 'Kwara', lga: 'Edu' }, create: { name: 'Edu', code: 'KWR-EDU', state: 'Kwara', lga: 'Edu', description: 'Edu LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-IFA' }, update: { state: 'Kwara', lga: 'Ifelodun' }, create: { name: 'Ifelodun', code: 'KWR-IFA', state: 'Kwara', lga: 'Ifelodun', description: 'Ifelodun LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-IRE' }, update: { state: 'Kwara', lga: 'Irepodun' }, create: { name: 'Irepodun', code: 'KWR-IRE', state: 'Kwara', lga: 'Irepodun', description: 'Irepodun LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-ISL' }, update: { state: 'Kwara', lga: 'Isin' }, create: { name: 'Isin', code: 'KWR-ISL', state: 'Kwara', lga: 'Isin', description: 'Isin LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-KAI' }, update: { state: 'Kwara', lga: 'Kaiama' }, create: { name: 'Kaiama', code: 'KWR-KAI', state: 'Kwara', lga: 'Kaiama', description: 'Kaiama LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-MOR' }, update: { state: 'Kwara', lga: 'Moro' }, create: { name: 'Moro', code: 'KWR-MOR', state: 'Kwara', lga: 'Moro', description: 'Moro LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-OYU' }, update: { state: 'Kwara', lga: 'Oyun' }, create: { name: 'Oyun', code: 'KWR-OYU', state: 'Kwara', lga: 'Oyun', description: 'Oyun LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-PAT' }, update: { state: 'Kwara', lga: 'Patigi' }, create: { name: 'Patigi', code: 'KWR-PAT', state: 'Kwara', lga: 'Patigi', description: 'Patigi LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-ILS' }, update: { state: 'Kwara', lga: 'Ilorin South' }, create: { name: 'Ilorin South', code: 'KWR-ILS', state: 'Kwara', lga: 'Ilorin South', description: 'Ilorin South LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-OKE' }, update: { state: 'Kwara', lga: 'Oke Ero' }, create: { name: 'Oke Ero', code: 'KWR-OKE', state: 'Kwara', lga: 'Oke Ero', description: 'Oke Ero LGA collection zone' } }),
-    prisma.zone.upsert({ where: { code: 'KWR-EKI' }, update: { state: 'Kwara', lga: 'Ekiti' }, create: { name: 'Ekiti', code: 'KWR-EKI', state: 'Kwara', lga: 'Ekiti', description: 'Ekiti LGA collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'LAG-IS' }, update: {}, create: { name: 'Lagos Island', code: 'LAG-IS', state: 'Lagos', description: 'Lagos Island collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'LAG-IK' }, update: {}, create: { name: 'Ikeja GRA', code: 'LAG-IK', state: 'Lagos', description: 'Ikeja collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'LAG-SUR' }, update: {}, create: { name: 'Surulere', code: 'LAG-SUR', state: 'Lagos', description: 'Surulere collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'ABJ-CBD' }, update: {}, create: { name: 'Abuja Central', code: 'ABJ-CBD', state: 'FCT', description: 'Abuja CBD collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'PH-PH' }, update: {}, create: { name: 'Port Harcourt City', code: 'PH-PH', state: 'Rivers', description: 'Port Harcourt collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KAN-MUN' }, update: {}, create: { name: 'Kano Municipal', code: 'KAN-MUN', state: 'Kano', description: 'Kano collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ILW' }, update: { state: 'Kwara' }, create: { name: 'Ilorin West', code: 'KWR-ILW', state: 'Kwara', description: 'Ilorin West collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ILE' }, update: { state: 'Kwara' }, create: { name: 'Ilorin East', code: 'KWR-ILE', state: 'Kwara', description: 'Ilorin East collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-OFF' }, update: { state: 'Kwara' }, create: { name: 'Offa', code: 'KWR-OFF', state: 'Kwara', description: 'Offa collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ASA' }, update: { state: 'Kwara' }, create: { name: 'Asa', code: 'KWR-ASA', state: 'Kwara', description: 'Asa collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-BAR' }, update: { state: 'Kwara' }, create: { name: 'Baruten', code: 'KWR-BAR', state: 'Kwara', description: 'Baruten collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-EDU' }, update: { state: 'Kwara' }, create: { name: 'Edu', code: 'KWR-EDU', state: 'Kwara', description: 'Edu collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-IFA' }, update: { state: 'Kwara' }, create: { name: 'Ifelodun', code: 'KWR-IFA', state: 'Kwara', description: 'Ifelodun collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-IRE' }, update: { state: 'Kwara' }, create: { name: 'Irepodun', code: 'KWR-IRE', state: 'Kwara', description: 'Irepodun collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ISL' }, update: { state: 'Kwara' }, create: { name: 'Isin', code: 'KWR-ISL', state: 'Kwara', description: 'Isin collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-KAI' }, update: { state: 'Kwara' }, create: { name: 'Kaiama', code: 'KWR-KAI', state: 'Kwara', description: 'Kaiama collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-MOR' }, update: { state: 'Kwara' }, create: { name: 'Moro', code: 'KWR-MOR', state: 'Kwara', description: 'Moro collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-OYU' }, update: { state: 'Kwara' }, create: { name: 'Oyun', code: 'KWR-OYU', state: 'Kwara', description: 'Oyun collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-PAT' }, update: { state: 'Kwara' }, create: { name: 'Patigi', code: 'KWR-PAT', state: 'Kwara', description: 'Patigi collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-ILS' }, update: { state: 'Kwara' }, create: { name: 'Ilorin South', code: 'KWR-ILS', state: 'Kwara', description: 'Ilorin South collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-OKE' }, update: { state: 'Kwara' }, create: { name: 'Oke Ero', code: 'KWR-OKE', state: 'Kwara', description: 'Oke Ero collection zone' } }),
+    prisma.zone.upsert({ where: { code: 'KWR-EKI' }, update: { state: 'Kwara' }, create: { name: 'Ekiti', code: 'KWR-EKI', state: 'Kwara', description: 'Ekiti collection zone' } }),
   ]);
   console.log(`  ✓ ${zones.length} Nigerian zones created`);
 
@@ -89,10 +89,10 @@ async function main() {
 
   // ── Nigerian Recycling Centers ─────────────────────────────
   await Promise.all([
-    prisma.recyclingCenter.create({ data: { name: 'LAWMA Recycling Hub — Ojota', address: 'Ojota, Lagos', latitude: 6.5833, longitude: 3.3833, phone: '+2341-279-5100', zoneId: zones[0].id, state: 'Lagos', lga: 'Kosofe', openingHours: 'Mon–Fri 7am–5pm, Sat 8am–2pm', acceptedTypes: ['plastic', 'paper', 'glass', 'metal'] } }),
-    prisma.recyclingCenter.create({ data: { name: 'EkoRecycle Center — Victoria Island', address: 'Ahmadu Bello Way, Victoria Island, Lagos', latitude: 6.4281, longitude: 3.4219, phone: '+2348055123456', zoneId: zones[1].id, state: 'Lagos', lga: 'Eti-Osa', openingHours: 'Mon–Sat 8am–6pm', acceptedTypes: ['e-waste', 'plastic', 'hazardous'] } }),
-    prisma.recyclingCenter.create({ data: { name: 'Abuja E-Waste Facility — Jabi', address: 'Jabi Lake Mall Area, Abuja', latitude: 9.0579, longitude: 7.4951, phone: '+2348066234567', zoneId: zones[3].id, state: 'FCT', lga: 'Municipal Area Council', openingHours: 'Tue–Sun 9am–4pm', acceptedTypes: ['e-waste', 'metal', 'glass'] } }),
-    prisma.recyclingCenter.create({ data: { name: 'GreenPH Recycling — Trans Amadi', address: 'Trans Amadi Industrial Layout, Port Harcourt', latitude: 4.8396, longitude: 7.0134, phone: '+2348077345678', zoneId: zones[4].id, state: 'Rivers', lga: 'Obio-Akpor', openingHours: 'Mon–Fri 8am–5pm', acceptedTypes: ['plastic', 'paper', 'metal', 'organic'] } }),
+    prisma.recyclingCenter.create({ data: { name: 'LAWMA Recycling Hub — Ojota', address: 'Ojota, Lagos', latitude: 6.5833, longitude: 3.3833, phone: '+2341-279-5100', zoneId: zones[0].id, state: 'Lagos', openingHours: 'Mon–Fri 7am–5pm, Sat 8am–2pm', acceptedTypes: ['plastic', 'paper', 'glass', 'metal'] } }),
+    prisma.recyclingCenter.create({ data: { name: 'EkoRecycle Center — Victoria Island', address: 'Ahmadu Bello Way, Victoria Island, Lagos', latitude: 6.4281, longitude: 3.4219, phone: '+2348055123456', zoneId: zones[1].id, state: 'Lagos', openingHours: 'Mon–Sat 8am–6pm', acceptedTypes: ['e-waste', 'plastic', 'hazardous'] } }),
+    prisma.recyclingCenter.create({ data: { name: 'Abuja E-Waste Facility — Jabi', address: 'Jabi Lake Mall Area, Abuja', latitude: 9.0579, longitude: 7.4951, phone: '+2348066234567', zoneId: zones[3].id, state: 'FCT', openingHours: 'Tue–Sun 9am–4pm', acceptedTypes: ['e-waste', 'metal', 'glass'] } }),
+    prisma.recyclingCenter.create({ data: { name: 'GreenPH Recycling — Trans Amadi', address: 'Trans Amadi Industrial Layout, Port Harcourt', latitude: 4.8396, longitude: 7.0134, phone: '+2348077345678', zoneId: zones[4].id, state: 'Rivers', openingHours: 'Mon–Fri 8am–5pm', acceptedTypes: ['plastic', 'paper', 'metal', 'organic'] } }),
   ]);
   console.log('  ✓ 4 Nigerian recycling centers created');
 

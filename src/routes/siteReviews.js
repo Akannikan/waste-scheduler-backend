@@ -18,7 +18,6 @@ function formatReview(review) {
       name: review.user?.name || null,
       avatarUrl: review.user?.avatarUrl || null,
       state: review.user?.state || null,
-      lga: review.user?.lga || null,
       zone: review.user?.zone?.name || null,
     },
   };
@@ -29,7 +28,7 @@ router.get('/', async (req, res) => {
     const reviews = await prisma.$queryRaw`
       SELECT r."id", r."rating", r."comment", r."createdAt",
              u."id" AS "userId", u."name" AS "userName", u."avatarUrl",
-             u."state", u."lga", z."name" AS "zoneName"
+             u."state", z."name" AS "zoneName"
       FROM "site_reviews" r
       JOIN "users" u ON u."id" = r."userId"
       LEFT JOIN "zones" z ON z."id" = u."zoneId"
@@ -82,7 +81,6 @@ function formatReviewRow(review) {
       name: review.userName || null,
       avatarUrl: review.avatarUrl || null,
       state: review.state || null,
-      lga: review.lga || null,
       zone: review.zoneName || null,
     },
   };
